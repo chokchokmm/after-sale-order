@@ -1,16 +1,19 @@
-import { Layout as AntLayout, Menu, theme } from "antd";
+import { Layout as AntLayout, Menu, theme, Button, Space } from "antd";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   DashboardOutlined,
   UnorderedListOutlined,
-  PlusOutlined,
+  LogoutOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
+import { useAuth } from "../contexts/AuthContext";
 
 const { Header, Content, Sider } = AntLayout;
 
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -30,6 +33,13 @@ const Layout = () => {
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
+  };
+
+  // Handle logout and redirect to login page
+  // 处理退出登录并重定向到登录页
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -52,8 +62,31 @@ const Layout = () => {
         />
       </Sider>
       <AntLayout>
-        <Header style={{ padding: 0, background: colorBgContainer }}>
-          <h1 style={{ paddingLeft: "24px", margin: 0 }}>售后工单管理系统</h1>
+        <Header
+          style={{
+            padding: "0 24px",
+            background: colorBgContainer,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <h1 style={{ margin: 0 }}>售后工单管理系统</h1>
+          {/* User info and logout button */}
+          {/* 用户信息和退出按钮 */}
+          <Space>
+            <span>
+              <UserOutlined style={{ marginRight: 8 }} />
+              {user?.username}
+            </span>
+            <Button
+              type="text"
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+            >
+              退出登录
+            </Button>
+          </Space>
         </Header>
         <Content style={{ margin: "16px" }}>
           <div
