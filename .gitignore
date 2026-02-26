@@ -7,3 +7,7 @@ __pycache__/
 *.mjs
 .env
 !.gitignore
+
+# macOS
+.DS_Store
+**/.DS_Store
