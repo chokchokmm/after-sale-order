@@ -13,11 +13,12 @@ export const statusConfig: Record<
 // Priority mapping to display text and color
 export const priorityConfig: Record<
   TicketPriority,
-  { label: string; color: string; badge: string }
+  { label: string; color: string; badge: string; description: string }
 > = {
-  [TicketPriority.HIGH]: { label: "高", color: "red", badge: "error" },
-  [TicketPriority.MEDIUM]: { label: "中", color: "orange", badge: "warning" },
-  [TicketPriority.LOW]: { label: "低", color: "green", badge: "default" },
+  [TicketPriority.P0]: { label: "P0", color: "#ff006e", badge: "error", description: "系统崩溃，功能失效" },
+  [TicketPriority.P1]: { label: "P1", color: "#ff4d4f", badge: "error", description: "阻塞型BUG" },
+  [TicketPriority.P2]: { label: "P2", color: "#faad14", badge: "warning", description: "非主流程BUG" },
+  [TicketPriority.P3]: { label: "P3", color: "#52c41a", badge: "success", description: "优化问题" },
 };
 
 // Category mapping to display text

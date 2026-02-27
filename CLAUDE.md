@@ -86,7 +86,7 @@ docker-compose down
 - System sources: TMS, OMS, WMS
 - Categories: TICKET_PROCESS, SYSTEM_FAILURE, COST_OPTIMIZATION
 - Handle types: PRODUCT, DEV, PRODUCT_DEV
-- Priorities: HIGH, MEDIUM, LOW
+- Priorities: P0 (系统崩溃，功能失效), P1 (阻塞型BUG), P2 (非主流程BUG), P3 (优化问题)
 - Statuses: OPEN, PROCESSING, COMPLETED
 - Custom ID format: `AS-YYYYMMDD-XX` (auto-generated daily sequence)
 

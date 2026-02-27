@@ -26,10 +26,17 @@ class TicketHandleType(str, Enum):
 
 
 class TicketPriority(str, Enum):
-    """Priority level of the ticket."""
-    HIGH = "HIGH"
-    MEDIUM = "MEDIUM"
-    LOW = "LOW"
+    """Priority level of the ticket.
+
+    P0: 系统崩溃，功能失效 - 需立即处理
+    P1: 阻塞型BUG - 需优先处理
+    P2: 非主流程BUG - 正常排期
+    P3: 优化问题 - 低优先级
+    """
+    P0 = "P0"
+    P1 = "P1"
+    P2 = "P2"
+    P3 = "P3"
 
 
 class TicketStatus(str, Enum):

@@ -17,9 +17,10 @@ export enum TicketHandleType {
 }
 
 export enum TicketPriority {
-  HIGH = "HIGH",
-  MEDIUM = "MEDIUM",
-  LOW = "LOW"
+  P0 = "P0",
+  P1 = "P1",
+  P2 = "P2",
+  P3 = "P3"
 }
 
 export enum TicketStatus {
