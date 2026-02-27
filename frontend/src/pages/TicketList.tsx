@@ -431,9 +431,10 @@ const TicketList = () => {
               className="tech-select"
               popupClassName="tech-select-dropdown"
             >
-              <Option value="HIGH">高</Option>
-              <Option value="MEDIUM">中</Option>
-              <Option value="LOW">低</Option>
+              <Option value="P0">P0 - 系统崩溃，功能失效</Option>
+              <Option value="P1">P1 - 阻塞型BUG</Option>
+              <Option value="P2">P2 - 非主流程BUG</Option>
+              <Option value="P3">P3 - 优化问题</Option>
             </Select>
           </Col>
         </Row>

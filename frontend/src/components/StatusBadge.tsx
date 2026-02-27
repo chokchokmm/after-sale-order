@@ -3,7 +3,7 @@ import { Tag } from 'antd';
 import type { TagProps } from 'antd';
 
 type StatusType = 'OPEN' | 'PROCESSING' | 'COMPLETED';
-type PriorityType = 'HIGH' | 'MEDIUM' | 'LOW';
+type PriorityType = 'P0' | 'P1' | 'P2' | 'P3';
 
 interface StatusBadgeProps extends Omit<TagProps, 'color'> {
   status?: StatusType;
@@ -51,23 +51,29 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   const getPriorityConfig = (p: PriorityType) => {
     const configs: Record<PriorityType, { color: string; bg: string; border: string; label: string }> = {
-      HIGH: {
+      P0: {
         color: '#ff006e',
         bg: 'rgba(255, 0, 110, 0.15)',
         border: 'rgba(255, 0, 110, 0.4)',
-        label: '高',
+        label: 'P0',
       },
-      MEDIUM: {
-        color: '#00d4ff',
-        bg: 'rgba(0, 212, 255, 0.15)',
-        border: 'rgba(0, 212, 255, 0.4)',
-        label: '中',
+      P1: {
+        color: '#ff4d4f',
+        bg: 'rgba(255, 77, 79, 0.15)',
+        border: 'rgba(255, 77, 79, 0.4)',
+        label: 'P1',
       },
-      LOW: {
-        color: '#6b7280',
-        bg: 'rgba(107, 114, 128, 0.15)',
-        border: 'rgba(107, 114, 128, 0.4)',
-        label: '低',
+      P2: {
+        color: '#faad14',
+        bg: 'rgba(250, 173, 20, 0.15)',
+        border: 'rgba(250, 173, 20, 0.4)',
+        label: 'P2',
+      },
+      P3: {
+        color: '#52c41a',
+        bg: 'rgba(82, 196, 26, 0.15)',
+        border: 'rgba(82, 196, 26, 0.4)',
+        label: 'P3',
       },
     };
     return configs[p];

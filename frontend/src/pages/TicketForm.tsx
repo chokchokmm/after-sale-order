@@ -217,7 +217,7 @@ const TicketForm = () => {
             systemSource: TicketSystemSource.TMS,
             category: TicketCategory.TICKET_PROCESS,
             handleType: TicketHandleType.PRODUCT,
-            priority: TicketPriority.MEDIUM,
+            priority: TicketPriority.P2,
           }}
           className="tech-form"
         >
@@ -271,9 +271,10 @@ const TicketForm = () => {
                 rules={[{ required: true, message: "请选择优先级" }]}
               >
                 <Select className="tech-select" popupClassName="tech-select-dropdown">
-                  <Option value={TicketPriority.HIGH}>高</Option>
-                  <Option value={TicketPriority.MEDIUM}>中</Option>
-                  <Option value={TicketPriority.LOW}>低</Option>
+                  <Option value={TicketPriority.P0}>P0 - 系统崩溃，功能失效</Option>
+                  <Option value={TicketPriority.P1}>P1 - 阻塞型BUG</Option>
+                  <Option value={TicketPriority.P2}>P2 - 非主流程BUG</Option>
+                  <Option value={TicketPriority.P3}>P3 - 优化问题</Option>
                 </Select>
               </Form.Item>
             </Col>
