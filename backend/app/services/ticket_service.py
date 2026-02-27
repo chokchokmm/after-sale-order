@@ -6,6 +6,7 @@ from app.models.ticket import (
     TicketSystemSource, TicketCategory, TicketPriority
 )
 from app.database import get_collection
+from app.services.storage_service import storage_service
 
 
 class TicketService:
@@ -45,6 +46,10 @@ class TicketService:
         ticket_dict["createdBy"] = created_by
         ticket_dict["aiMetadata"] = {"keywords": [], "similarTickets": [], "suggestedSolution": None}
 
+        # Ensure images is a list
+        if "images" not in ticket_dict:
+            ticket_dict["images"] = []
+
         result = await collection.insert_one(ticket_dict)
 
         return Ticket(**ticket_dict)
@@ -69,6 +74,25 @@ class TicketService:
             pass
 
         return None
+
+    async def get_ticket_by_id_with_urls(self, ticket_id: str) -> Optional[Dict[str, Any]]:
+        """Get a ticket by ID with presigned URLs for images.
+
+        Returns a dict with image URLs included for frontend display.
+        """
+        ticket = await self.get_ticket_by_id(ticket_id)
+        if not ticket:
+            return None
+
+        # Generate presigned URLs for each image
+        images_with_urls = []
+        for img in ticket.images:
+            url = storage_service.get_presigned_url(img.storedName)
+            images_with_urls.append({**img.model_dump(), "url": url})
+
+        result = ticket.model_dump()
+        result["images"] = images_with_urls
+        return result
 
     async def get_tickets(
         self,
@@ -114,6 +138,43 @@ class TicketService:
             tickets.append(Ticket(**doc))
 
         return tickets, total
+
+    async def get_tickets_with_image_urls(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        system_source: Optional[TicketSystemSource] = None,
+        category: Optional[TicketCategory] = None,
+        status: Optional[TicketStatus] = None,
+        priority: Optional[TicketPriority] = None,
+        search: Optional[str] = None,
+        created_by: Optional[str] = None
+    ) -> tuple[List[Dict[str, Any]], int]:
+        """Get tickets with presigned URLs for images."""
+        tickets, total = await self.get_tickets(
+            page=page,
+            page_size=page_size,
+            system_source=system_source,
+            category=category,
+            status=status,
+            priority=priority,
+            search=search,
+            created_by=created_by
+        )
+
+        # Add presigned URLs to each ticket's images
+        tickets_with_urls = []
+        for ticket in tickets:
+            images_with_urls = []
+            for img in ticket.images:
+                url = storage_service.get_presigned_url(img.storedName)
+                images_with_urls.append({**img.model_dump(), "url": url})
+
+            ticket_dict = ticket.model_dump()
+            ticket_dict["images"] = images_with_urls
+            tickets_with_urls.append(ticket_dict)
+
+        return tickets_with_urls, total
 
     async def update_ticket(self, ticket_id: str, ticket_data: TicketUpdate) -> Optional[Ticket]:
         """Update a ticket."""

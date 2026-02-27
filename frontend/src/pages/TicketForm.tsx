@@ -11,10 +11,14 @@ import {
   Row,
   Col,
   Tag,
+  Upload,
+  Modal,
+  Image,
 } from "antd";
 import { ArrowLeftOutlined, SaveOutlined, RobotOutlined, PlusOutlined, CloseOutlined } from "@ant-design/icons";
 import { ticketsApi } from "../api";
-import type { Ticket, TicketCreate, TicketUpdate } from "../types";
+import type { Ticket, TicketCreate, TicketUpdate, TicketImage, UploadResponse } from "../types";
+import type { UploadFile, UploadProps } from "antd/es/upload/interface";
 import { TicketSystemSource, TicketCategory, TicketHandleType, TicketPriority } from "../types";
 import GlowButton from "../components/GlowButton";
 import { useAuth } from "../contexts/AuthContext";
@@ -36,6 +40,10 @@ const TicketForm = () => {
   const [inputValue, setInputValue] = useState("");
   const [generatingTags, setGeneratingTags] = useState(false);
   const [generatingRecommendation, setGeneratingRecommendation] = useState(false);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
+  const [uploadedImages, setUploadedImages] = useState<TicketImage[]>([]);
 
   useEffect(() => {
     if (isEdit) {
@@ -55,6 +63,17 @@ const TicketForm = () => {
       const data = await ticketsApi.get(id);
       setTicket(data);
       setTags(data.tags || []);
+      // Load existing images into fileList
+      if (data.images && data.images.length > 0) {
+        setUploadedImages(data.images);
+        const files: UploadFile[] = data.images.map((img: TicketImage) => ({
+          uid: img.id,
+          name: img.filename,
+          status: 'done',
+          url: img.url,
+        }));
+        setFileList(files);
+      }
       form.setFieldsValue(data);
     } catch (err) {
       message.error("加载工单失败");
@@ -73,6 +92,7 @@ const TicketForm = () => {
       const submitData: TicketCreate | TicketUpdate = {
         ...values,
         tags,
+        images: uploadedImages,
       };
 
       if (isEdit) {
@@ -166,6 +186,73 @@ const TicketForm = () => {
     } finally {
       setGeneratingRecommendation(false);
     }
+  };
+
+  // Image upload handlers
+  const handleBeforeUpload = (file: File) => {
+    // Validate file type
+    const isValidType = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type);
+    if (!isValidType) {
+      message.error('仅支持 PNG、JPG、GIF、WEBP 格式的图片');
+      return Upload.LIST_IGNORE;
+    }
+    // Validate file size (2MB)
+    const isValidSize = file.size / 1024 / 1024 < 2;
+    if (!isValidSize) {
+      message.error('图片大小不能超过 2MB');
+      return Upload.LIST_IGNORE;
+    }
+    // Validate max count
+    if (fileList.length >= 5) {
+      message.error('最多只能上传 5 张图片');
+      return Upload.LIST_IGNORE;
+    }
+    return true;
+  };
+
+  const handleCustomRequest: UploadProps['customRequest'] = async ({ file, onSuccess, onError }) => {
+    try {
+      const result: UploadResponse = await ticketsApi.uploadImage(file as File);
+      // Store the image info for form submission
+      setUploadedImages(prev => [...prev, result.image]);
+      // Update fileList with URL for display
+      if (onSuccess) {
+        onSuccess(result);
+      }
+    } catch (error) {
+      message.error('上传失败，请重试');
+      console.error(error);
+      if (onError) {
+        onError(error as Error);
+      }
+    }
+  };
+
+  const handleUploadChange: UploadProps['onChange'] = ({ fileList: newFileList, file }) => {
+    setFileList(newFileList);
+    // When a file is removed, update uploadedImages
+    if (file.status === 'removed') {
+      const removedUid = file.uid;
+      setUploadedImages(prev => prev.filter(img => img.id !== removedUid));
+    }
+  };
+
+  const handlePreview = async (file: UploadFile) => {
+    setPreviewImage(file.url || file.thumbUrl || '');
+    setPreviewOpen(true);
+  };
+
+  const handleRemove: UploadProps['onRemove'] = (file) => {
+    return new Promise((resolve) => {
+      Modal.confirm({
+        title: '确认删除',
+        content: '确定要删除这张图片吗？',
+        okText: '确定',
+        cancelText: '取消',
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
   };
 
   if (loading) {
@@ -306,6 +393,29 @@ const TicketForm = () => {
             />
           </Form.Item>
 
+          {/* Image Upload */}
+          <Form.Item label={<span className="tech-form-label">截图</span>}>
+            <Upload
+              listType="picture-card"
+              fileList={fileList}
+              maxCount={5}
+              beforeUpload={handleBeforeUpload}
+              customRequest={handleCustomRequest}
+              onChange={handleUploadChange}
+              onPreview={handlePreview}
+              onRemove={handleRemove}
+              className="tech-upload"
+            >
+              {fileList.length >= 5 ? null : (
+                <div className="tech-upload-btn">
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8, fontSize: 12 }}>上传</div>
+                </div>
+              )}
+            </Upload>
+            <div className="tech-upload-hint">支持 PNG、JPG、GIF、WEBP 格式，单张不超过 2MB，最多 5 张</div>
+          </Form.Item>
+
           {isEdit && ticket?.status !== "OPEN" && (
             <Form.Item
               label={
@@ -403,6 +513,16 @@ const TicketForm = () => {
           </Form.Item>
         </Form>
       </Card>
+
+      {/* Image Preview Modal */}
+      <Modal
+        open={previewOpen}
+        footer={null}
+        onCancel={() => setPreviewOpen(false)}
+        className="tech-preview-modal"
+      >
+        <Image src={previewImage} style={{ width: '100%' }} preview={false} />
+      </Modal>
 
       {/* Custom styles for tech-themed TicketForm */}
       <style>{`
@@ -693,6 +813,67 @@ const TicketForm = () => {
         .tech-cancel-btn:hover {
           border-color: rgba(255, 255, 255, 0.3) !important;
           color: var(--text-primary) !important;
+        }
+
+        /* Image Upload Styles */
+        .tech-upload .ant-upload.ant-upload-select-picture-card {
+          background: rgba(22, 33, 62, 0.8) !important;
+          border: 1px dashed rgba(0, 212, 255, 0.3) !important;
+          border-radius: var(--radius-sm) !important;
+          transition: all 0.3s ease;
+        }
+
+        .tech-upload .ant-upload.ant-upload-select-picture-card:hover {
+          border-color: var(--accent-cyan) !important;
+          box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+        }
+
+        .tech-upload-btn {
+          color: var(--accent-cyan);
+        }
+
+        .tech-upload .ant-upload-list-picture-card-container {
+          border-radius: var(--radius-sm) !important;
+        }
+
+        .tech-upload .ant-upload-list-picture-card .ant-upload-list-item {
+          background: rgba(22, 33, 62, 0.8) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: var(--radius-sm) !important;
+        }
+
+        .tech-upload .ant-upload-list-picture-card .ant-upload-list-item-actions {
+          background: rgba(0, 0, 0, 0.6);
+        }
+
+        .tech-upload .ant-upload-list-picture-card .ant-upload-list-item-actions .anticon {
+          color: var(--text-primary);
+        }
+
+        .tech-upload .ant-upload-list-picture-card .ant-upload-list-item-actions .anticon:hover {
+          color: var(--accent-cyan);
+        }
+
+        .tech-upload-hint {
+          color: var(--text-muted);
+          font-size: 12px;
+          margin-top: 8px;
+        }
+
+        /* Preview Modal */
+        .tech-preview-modal .ant-modal-content {
+          background: rgba(22, 33, 62, 0.95) !important;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: var(--radius-lg) !important;
+        }
+
+        .tech-preview-modal .ant-modal-close {
+          color: var(--text-secondary);
+        }
+
+        .tech-preview-modal .ant-modal-close:hover {
+          color: var(--accent-cyan);
         }
       `}</style>
     </div>

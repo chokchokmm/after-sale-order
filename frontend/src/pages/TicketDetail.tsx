@@ -11,6 +11,7 @@ import {
   Row,
   Col,
   Divider,
+  Image,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -19,6 +20,7 @@ import {
   TagsOutlined,
   LinkOutlined,
   BulbOutlined,
+  PictureOutlined,
 } from "@ant-design/icons";
 import { ticketsApi } from "../api";
 import type { Ticket, TicketStatus, TicketPriority } from "../types";
@@ -186,6 +188,34 @@ const TicketDetail = () => {
               <h4 className="tech-section-title">问题描述</h4>
               <p className="tech-description-text">{ticket.description}</p>
             </div>
+
+            {/* Images Section */}
+            {ticket.images && ticket.images.length > 0 && (
+              <>
+                <Divider className="tech-divider" />
+                <div className="tech-section">
+                  <h4 className="tech-section-title">
+                    <PictureOutlined style={{ marginRight: 8 }} />
+                    截图
+                  </h4>
+                  <Image.PreviewGroup>
+                    <div className="tech-images-container">
+                      {ticket.images.map((img) => (
+                        <Image
+                          key={img.id}
+                          src={img.url}
+                          alt={img.filename}
+                          width={100}
+                          height={100}
+                          className="tech-image-item"
+                          style={{ objectFit: 'cover', borderRadius: 8 }}
+                        />
+                      ))}
+                    </div>
+                  </Image.PreviewGroup>
+                </div>
+              </>
+            )}
 
             {ticket.status !== "OPEN" && (
               <>
@@ -569,6 +599,25 @@ const TicketDetail = () => {
           border-left: 3px solid var(--accent-magenta);
           border-radius: 0 8px 8px 0;
           margin: 0;
+        }
+
+        /* Images Section */
+        .tech-images-container {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+
+        .tech-image-item {
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .tech-image-item:hover {
+          border-color: var(--accent-cyan) !important;
+          box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+          transform: translateY(-2px);
         }
       `}</style>
     </div>

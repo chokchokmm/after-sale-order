@@ -34,6 +34,16 @@ export interface AIMetadata {
   suggestedSolution?: string;
 }
 
+export interface TicketImage {
+  id: string;
+  filename: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: string;
+  url?: string;  // Presigned URL for display
+}
+
 export interface Ticket {
   id: string;
   systemSource: TicketSystemSource;
@@ -44,6 +54,7 @@ export interface Ticket {
   priority: TicketPriority;
   status: TicketStatus;
   tags: string[];
+  images: TicketImage[];
   solutionTemplate?: string;
   createdBy?: string;
   assignedTo?: string;
@@ -61,6 +72,7 @@ export interface TicketCreate {
   handleDetail: string;
   priority: TicketPriority;
   tags?: string[];
+  images?: TicketImage[];
   solutionTemplate?: string;
   assignedTo?: string;
   createdBy?: string;
@@ -75,9 +87,15 @@ export interface TicketUpdate {
   priority?: TicketPriority;
   status?: TicketStatus;
   tags?: string[];
+  images?: TicketImage[];
   solutionTemplate?: string;
   assignedTo?: string;
   createdBy?: string;
+}
+
+export interface UploadResponse {
+  image: TicketImage;
+  url: string;
 }
 
 export interface TicketListParams {

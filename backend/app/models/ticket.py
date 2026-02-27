@@ -46,6 +46,16 @@ class AIMetadata(BaseModel):
     suggestedSolution: Optional[str] = None
 
 
+class TicketImage(BaseModel):
+    """Image attached to a ticket."""
+    id: str = Field(..., description="Unique image ID")
+    filename: str = Field(..., description="Original filename")
+    storedName: str = Field(..., description="MinIO object key")
+    mimeType: str = Field(..., description="Content type")
+    size: int = Field(..., description="File size in bytes")
+    uploadedAt: datetime = Field(default_factory=datetime.utcnow)
+
+
 class Ticket(BaseModel):
     """Ticket model for after-sales support."""
     id: Optional[str] = None
@@ -57,6 +67,7 @@ class Ticket(BaseModel):
     priority: TicketPriority
     status: TicketStatus = TicketStatus.OPEN
     tags: List[str] = Field(default_factory=list)
+    images: List[TicketImage] = Field(default_factory=list, description="Ticket screenshots")
     solutionTemplate: Optional[str] = None
     createdBy: Optional[str] = None
     assignedTo: Optional[str] = None
@@ -75,6 +86,7 @@ class TicketCreate(BaseModel):
     handleDetail: str = ""
     priority: TicketPriority
     tags: List[str] = Field(default_factory=list)
+    images: List[TicketImage] = Field(default_factory=list, description="Ticket screenshots")
     solutionTemplate: Optional[str] = None
     assignedTo: Optional[str] = None
     createdBy: Optional[str] = None
@@ -90,6 +102,7 @@ class TicketUpdate(BaseModel):
     priority: Optional[TicketPriority] = None
     status: Optional[TicketStatus] = None
     tags: Optional[List[str]] = None
+    images: Optional[List[TicketImage]] = None
     solutionTemplate: Optional[str] = None
     assignedTo: Optional[str] = None
     createdBy: Optional[str] = None

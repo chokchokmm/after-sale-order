@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, UploadFile, File
 from typing import Optional, List
 from pydantic import BaseModel
 from app.models.ticket import (
-    TicketCreate, TicketUpdate, TicketResponse,
+    TicketCreate, TicketUpdate, TicketResponse, TicketImage,
     TicketStatus, TicketSystemSource, TicketCategory, TicketPriority
 )
 from app.schemas.response import TicketListResponse, MessageResponse
 from app.services.ticket_service import ticket_service
 from app.services.ai_service import ai_service
+from app.services.storage_service import storage_service
 
 router = APIRouter()
 
@@ -27,6 +28,17 @@ class TagGenerateResponse(BaseModel):
 class RecommendationResponse(BaseModel):
     """Response for handling recommendation."""
     recommendation: str
+
+
+class UploadResponse(BaseModel):
+    """Response for image upload."""
+    image: TicketImage
+    url: str
+
+
+class ImageDeleteResponse(BaseModel):
+    """Response for image deletion."""
+    success: bool
 
 
 @router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
@@ -166,3 +178,60 @@ async def get_handling_recommendation(ticket_id: str):
             detail="Failed to generate recommendation"
         )
     return RecommendationResponse(recommendation=recommendation)
+
+
+@router.post("/upload", response_model=UploadResponse)
+async def upload_image(file: UploadFile = File(...)):
+    """Upload a single image for ticket.
+
+    The image is stored in MinIO and returns a presigned URL for display.
+    When creating/updating a ticket, include the image info in the images field.
+    """
+    # Read file content
+    content = await file.read()
+
+    try:
+        image_info = storage_service.upload_image(
+            file_data=content,
+            filename=file.filename or "image.png",
+            content_type=file.content_type or "image/png"
+        )
+        # Generate URL for immediate display
+        url = storage_service.get_presigned_url(image_info["storedName"])
+        return UploadResponse(image=TicketImage(**image_info), url=url)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Upload failed")
+
+
+@router.delete("/{ticket_id}/images/{image_id}", response_model=ImageDeleteResponse)
+async def delete_ticket_image(ticket_id: str, image_id: str):
+    """Delete an image from a ticket.
+
+    This removes the image from both the ticket record and MinIO storage.
+    """
+    ticket = await ticket_service.get_ticket_by_id(ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+
+    # Find and remove image
+    image_to_delete = None
+    updated_images = []
+    for img in ticket.images:
+        if img.id == image_id:
+            image_to_delete = img
+        else:
+            updated_images.append(img)
+
+    if not image_to_delete:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+
+    # Delete from storage
+    storage_service.delete_image(image_to_delete.storedName)
+
+    # Update ticket with new images list
+    from app.models.ticket import TicketUpdate
+    await ticket_service.update_ticket(ticket_id, TicketUpdate(images=updated_images))
+
+    return ImageDeleteResponse(success=True)

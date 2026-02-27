@@ -6,6 +6,7 @@ import type {
   TicketListParams,
   TicketListResponse,
   TicketStatistics,
+  UploadResponse,
 } from "../types";
 
 export const ticketsApi = {
@@ -64,5 +65,20 @@ export const ticketsApi = {
   getRecommendation: async (ticketId: string): Promise<{ recommendation: string }> => {
     const response = await api.get<{ recommendation: string }>(`/api/tickets/${ticketId}/recommendation`);
     return response.data;
+  },
+
+  // Upload image
+  uploadImage: async (file: File): Promise<UploadResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<UploadResponse>('/api/tickets/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  // Delete image from ticket
+  deleteImage: async (ticketId: string, imageId: string): Promise<void> => {
+    await api.delete(`/api/tickets/${ticketId}/images/${imageId}`);
   },
 };
