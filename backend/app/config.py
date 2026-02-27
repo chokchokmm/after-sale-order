@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     milvus_port: int = 19530
     milvus_collection: str = "ticket_embeddings"
 
+    # MinIO Object Storage
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_bucket: str = "ticket-screenshots"
+    minio_secure: bool = False
+    minio_url_expiry: int = 3600  # 1 hour in seconds
+
     # Timeout settings (in seconds)
     milvus_timeout: int = 60  # Milvus 操作超时（首次插入可能较慢）
     embedding_timeout: int = 30  # Embedding API 超时 (文本较长可能需要更长时间)

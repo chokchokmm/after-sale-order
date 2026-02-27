@@ -21,6 +21,9 @@ zhipuai
 # Vector Database
 pymilvus>=2.3.0
 
+# Object Storage
+minio==7.2.3
+
 # Development
 pytest==8.3.3
 pytest-asyncio==0.24.0
