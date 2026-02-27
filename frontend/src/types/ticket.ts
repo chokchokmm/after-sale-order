@@ -1,7 +1,7 @@
 export enum TicketSystemSource {
   TMS = "TMS",
   OMS = "OMS",
-  OTHER = "OTHER"
+  WMS = "WMS"
 }
 
 export enum TicketCategory {
@@ -13,8 +13,7 @@ export enum TicketCategory {
 export enum TicketHandleType {
   PRODUCT = "PRODUCT",
   DEV = "DEV",
-  REQUIREMENT = "REQUIREMENT",
-  URGENT = "URGENT"
+  PRODUCT_DEV = "PRODUCT_DEV"
 }
 
 export enum TicketPriority {
@@ -26,8 +25,7 @@ export enum TicketPriority {
 export enum TicketStatus {
   OPEN = "OPEN",
   PROCESSING = "PROCESSING",
-  CLOSED = "CLOSED",
-  VERIFIED = "VERIFIED"
+  COMPLETED = "COMPLETED"
 }
 
 export interface AIMetadata {
@@ -65,6 +63,7 @@ export interface TicketCreate {
   tags?: string[];
   solutionTemplate?: string;
   assignedTo?: string;
+  createdBy?: string;
 }
 
 export interface TicketUpdate {
@@ -78,6 +77,7 @@ export interface TicketUpdate {
   tags?: string[];
   solutionTemplate?: string;
   assignedTo?: string;
+  createdBy?: string;
 }
 
 export interface TicketListParams {
@@ -88,6 +88,7 @@ export interface TicketListParams {
   status?: TicketStatus;
   priority?: TicketPriority;
   search?: string;
+  createdBy?: string;
 }
 
 export interface TicketListResponse {
@@ -109,8 +110,7 @@ export interface TicketStatistics {
     total: number;
     open: number;
     processing: number;
-    closed: number;
-    verified: number;
+    completed: number;
   };
   byCategory: Record<string, number>;
   byStatus: Record<string, number>;

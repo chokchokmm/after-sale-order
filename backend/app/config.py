@@ -15,6 +15,23 @@ class Settings(BaseSettings):
     port: int = 8000
     cors_origins: Union[List[str], str] = ["http://localhost:5173", "http://localhost:3000"]
 
+    # Zhipu AI
+    zhipu_api_key: str = ""
+
+    # Milvus Vector Database
+    milvus_host: str = "localhost"
+    milvus_port: int = 19530
+    milvus_collection: str = "ticket_embeddings"
+
+    # Timeout settings (in seconds)
+    milvus_timeout: int = 60  # Milvus 操作超时（首次插入可能较慢）
+    embedding_timeout: int = 30  # Embedding API 超时 (文本较长可能需要更长时间)
+    llm_timeout: int = 60  # LLM API 超时 (生成推荐/标签可能较慢)
+
+    # Logging
+    log_level: str = "INFO"  # 日志级别: DEBUG, INFO, WARNING, ERROR
+    log_dir: str = "logs"  # 日志目录
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

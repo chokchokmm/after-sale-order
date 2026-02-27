@@ -11,11 +11,34 @@ from app.database import get_collection
 class TicketService:
     """Service for ticket business logic."""
 
+    async def _generate_ticket_id(self) -> str:
+        """Generate ticket ID in format AS-YYYYMMDD-XX."""
+        today = datetime.utcnow().strftime("%Y%m%d")
+        prefix = f"AS-{today}"
+
+        # Get or create counter for today
+        counters_collection = await get_collection("counters")
+
+        # Atomically increment and get the next sequence number
+        result = await counters_collection.find_one_and_update(
+            {"_id": prefix},
+            {"$inc": {"seq": 1}},
+            upsert=True,
+            return_document=True
+        )
+
+        seq = result.get("seq", 1)
+        return f"{prefix}-{seq:02d}"
+
     async def create_ticket(self, ticket_data: TicketCreate, created_by: Optional[str] = None) -> Ticket:
         """Create a new ticket."""
         collection = await get_collection("tickets")
 
+        # Generate custom ticket ID
+        ticket_id = await self._generate_ticket_id()
+
         ticket_dict = ticket_data.model_dump()
+        ticket_dict["id"] = ticket_id
         ticket_dict["createdAt"] = datetime.utcnow()
         ticket_dict["updatedAt"] = datetime.utcnow()
         ticket_dict["status"] = TicketStatus.OPEN
@@ -23,7 +46,6 @@ class TicketService:
         ticket_dict["aiMetadata"] = {"keywords": [], "similarTickets": [], "suggestedSolution": None}
 
         result = await collection.insert_one(ticket_dict)
-        ticket_dict["id"] = str(result.inserted_id)
 
         return Ticket(**ticket_dict)
 
@@ -31,15 +53,21 @@ class TicketService:
         """Get a ticket by ID."""
         collection = await get_collection("tickets")
 
+        # First try to find by custom id field
+        doc = await collection.find_one({"id": ticket_id})
+        if doc:
+            return Ticket(**doc)
+
+        # Fallback to ObjectId for backward compatibility
         try:
             obj_id = ObjectId(ticket_id)
+            doc = await collection.find_one({"_id": obj_id})
+            if doc:
+                doc["id"] = str(doc["_id"])
+                return Ticket(**doc)
         except:
-            return None
+            pass
 
-        doc = await collection.find_one({"_id": obj_id})
-        if doc:
-            doc["id"] = str(doc["_id"])
-            return Ticket(**doc)
         return None
 
     async def get_tickets(
@@ -50,7 +78,8 @@ class TicketService:
         category: Optional[TicketCategory] = None,
         status: Optional[TicketStatus] = None,
         priority: Optional[TicketPriority] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        created_by: Optional[str] = None
     ) -> tuple[List[Ticket], int]:
         """Get tickets with filtering and pagination."""
         collection = await get_collection("tickets")
@@ -68,6 +97,8 @@ class TicketService:
             filter_query["priority"] = priority
         if search:
             filter_query["description"] = {"$regex": search, "$options": "i"}
+        if created_by:
+            filter_query["createdBy"] = {"$regex": created_by, "$options": "i"}
 
         # Get total count
         total = await collection.count_documents(filter_query)
@@ -78,7 +109,8 @@ class TicketService:
 
         tickets = []
         async for doc in cursor:
-            doc["id"] = str(doc["_id"])
+            if "id" not in doc:
+                doc["id"] = str(doc["_id"])
             tickets.append(Ticket(**doc))
 
         return tickets, total
@@ -87,11 +119,6 @@ class TicketService:
         """Update a ticket."""
         collection = await get_collection("tickets")
 
-        try:
-            obj_id = ObjectId(ticket_id)
-        except:
-            return None
-
         # Build update dict with only non-None fields
         update_dict = {k: v for k, v in ticket_data.model_dump().items() if v is not None}
         if not update_dict:
@@ -99,11 +126,18 @@ class TicketService:
 
         update_dict["updatedAt"] = datetime.utcnow()
 
-        # If status is being changed to CLOSED, set closedAt
-        if ticket_data.status == TicketStatus.CLOSED:
+        # If status is being changed to COMPLETED, set closedAt
+        if ticket_data.status == TicketStatus.COMPLETED:
             update_dict["closedAt"] = datetime.utcnow()
 
-        await collection.update_one({"_id": obj_id}, {"$set": update_dict})
+        # Try to update by custom id first, then by ObjectId
+        result = await collection.update_one({"id": ticket_id}, {"$set": update_dict})
+        if result.matched_count == 0:
+            try:
+                obj_id = ObjectId(ticket_id)
+                await collection.update_one({"_id": obj_id}, {"$set": update_dict})
+            except:
+                pass
 
         return await self.get_ticket_by_id(ticket_id)
 
@@ -111,21 +145,20 @@ class TicketService:
         """Close a ticket."""
         collection = await get_collection("tickets")
 
-        try:
-            obj_id = ObjectId(ticket_id)
-        except:
-            return None
+        update_data = {
+            "status": TicketStatus.COMPLETED,
+            "closedAt": datetime.utcnow(),
+            "updatedAt": datetime.utcnow()
+        }
 
-        await collection.update_one(
-            {"_id": obj_id},
-            {
-                "$set": {
-                    "status": TicketStatus.CLOSED,
-                    "closedAt": datetime.utcnow(),
-                    "updatedAt": datetime.utcnow()
-                }
-            }
-        )
+        # Try to update by custom id first, then by ObjectId
+        result = await collection.update_one({"id": ticket_id}, {"$set": update_data})
+        if result.matched_count == 0:
+            try:
+                obj_id = ObjectId(ticket_id)
+                await collection.update_one({"_id": obj_id}, {"$set": update_data})
+            except:
+                pass
 
         return await self.get_ticket_by_id(ticket_id)
 
@@ -133,13 +166,17 @@ class TicketService:
         """Delete a ticket."""
         collection = await get_collection("tickets")
 
+        # Try to delete by custom id first, then by ObjectId
+        result = await collection.delete_one({"id": ticket_id})
+        if result.deleted_count > 0:
+            return True
+
         try:
             obj_id = ObjectId(ticket_id)
+            result = await collection.delete_one({"_id": obj_id})
+            return result.deleted_count > 0
         except:
             return False
-
-        result = await collection.delete_one({"_id": obj_id})
-        return result.deleted_count > 0
 
     async def get_ticket_statistics(self) -> Dict[str, Any]:
         """Get ticket statistics for dashboard."""
@@ -152,8 +189,7 @@ class TicketService:
                     "total": {"$sum": 1},
                     "open": {"$sum": {"$cond": [{"$eq": ["$status", "OPEN"]}, 1, 0]}},
                     "processing": {"$sum": {"$cond": [{"$eq": ["$status", "PROCESSING"]}, 1, 0]}},
-                    "closed": {"$sum": {"$cond": [{"$eq": ["$status", "CLOSED"]}, 1, 0]}},
-                    "verified": {"$sum": {"$cond": [{"$eq": ["$status", "VERIFIED"]}, 1, 0]}},
+                    "completed": {"$sum": {"$cond": [{"$eq": ["$status", "COMPLETED"]}, 1, 0]}},
                 }
             }
         ]
@@ -163,11 +199,10 @@ class TicketService:
                 "total": doc.get("total", 0),
                 "open": doc.get("open", 0),
                 "processing": doc.get("processing", 0),
-                "closed": doc.get("closed", 0),
-                "verified": doc.get("verified", 0),
+                "completed": doc.get("completed", 0),
             }
 
-        return {"total": 0, "open": 0, "processing": 0, "closed": 0, "verified": 0}
+        return {"total": 0, "open": 0, "processing": 0, "completed": 0}
 
     async def get_tickets_by_category(self) -> Dict[str, int]:
         """Get ticket count by category."""

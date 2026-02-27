@@ -8,7 +8,7 @@ class TicketSystemSource(str, Enum):
     """System source where the issue originated."""
     TMS = "TMS"
     OMS = "OMS"
-    OTHER = "OTHER"
+    WMS = "WMS"
 
 
 class TicketCategory(str, Enum):
@@ -22,8 +22,7 @@ class TicketHandleType(str, Enum):
     """Type of handling required."""
     PRODUCT = "PRODUCT"
     DEV = "DEV"
-    REQUIREMENT = "REQUIREMENT"
-    URGENT = "URGENT"
+    PRODUCT_DEV = "PRODUCT_DEV"
 
 
 class TicketPriority(str, Enum):
@@ -37,8 +36,7 @@ class TicketStatus(str, Enum):
     """Status of the ticket."""
     OPEN = "OPEN"
     PROCESSING = "PROCESSING"
-    CLOSED = "CLOSED"
-    VERIFIED = "VERIFIED"
+    COMPLETED = "COMPLETED"
 
 
 class AIMetadata(BaseModel):
@@ -74,11 +72,12 @@ class TicketCreate(BaseModel):
     category: TicketCategory
     description: str
     handleType: TicketHandleType
-    handleDetail: str
+    handleDetail: str = ""
     priority: TicketPriority
     tags: List[str] = Field(default_factory=list)
     solutionTemplate: Optional[str] = None
     assignedTo: Optional[str] = None
+    createdBy: Optional[str] = None
 
 
 class TicketUpdate(BaseModel):
@@ -93,6 +92,7 @@ class TicketUpdate(BaseModel):
     tags: Optional[List[str]] = None
     solutionTemplate: Optional[str] = None
     assignedTo: Optional[str] = None
+    createdBy: Optional[str] = None
 
 
 class TicketResponse(Ticket):

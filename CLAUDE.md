@@ -100,3 +100,12 @@ docker-compose down
 - MongoDB 7.0 - Primary database
 - Milvus - Vector database for ticket embeddings (depends on etcd + MinIO)
 - All configured via docker-compose.yml
+
+## Active Technologies
+- TypeScript 5.x + React 19 + React Router v6, Ant Design 5.x (001-simple-login)
+- localStorage (浏览器本地存储) (001-simple-login)
+- TypeScript 5.x / React 19 + Ant Design 5.x, ECharts, Vite (002-tech-dashboard)
+- N/A (frontend-only styling changes) (002-tech-dashboard)
+
+## Recent Changes
+- 001-simple-login: Added TypeScript 5.x + React 19 + React Router v6, Ant Design 5.x

@@ -49,4 +49,20 @@ export const ticketsApi = {
     const response = await api.get<TicketStatistics>("/api/tickets/stats");
     return response.data;
   },
+
+  // Generate tags using AI
+  generateTags: async (data: {
+    description: string;
+    category: string;
+    systemSource: string;
+  }): Promise<{ tags: string[] }> => {
+    const response = await api.post<{ tags: string[] }>("/api/tickets/generate-tags", data);
+    return response.data;
+  },
+
+  // Get handling recommendation using AI
+  getRecommendation: async (ticketId: string): Promise<{ recommendation: string }> => {
+    const response = await api.get<{ recommendation: string }>(`/api/tickets/${ticketId}/recommendation`);
+    return response.data;
+  },
 };

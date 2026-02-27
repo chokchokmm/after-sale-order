@@ -1,19 +1,39 @@
 from fastapi import APIRouter, HTTPException, Query, status
-from typing import Optional
+from typing import Optional, List
+from pydantic import BaseModel
 from app.models.ticket import (
     TicketCreate, TicketUpdate, TicketResponse,
     TicketStatus, TicketSystemSource, TicketCategory, TicketPriority
 )
 from app.schemas.response import TicketListResponse, MessageResponse
 from app.services.ticket_service import ticket_service
+from app.services.ai_service import ai_service
 
 router = APIRouter()
+
+
+class TagGenerateRequest(BaseModel):
+    """Request for generating tags."""
+    description: str
+    category: str
+    systemSource: str
+
+
+class TagGenerateResponse(BaseModel):
+    """Response for generated tags."""
+    tags: List[str]
+
+
+class RecommendationResponse(BaseModel):
+    """Response for handling recommendation."""
+    recommendation: str
 
 
 @router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
 async def create_ticket(ticket_data: TicketCreate):
     """Create a new ticket."""
-    ticket = await ticket_service.create_ticket(ticket_data)
+    created_by = ticket_data.createdBy
+    ticket = await ticket_service.create_ticket(ticket_data, created_by=created_by)
     return ticket
 
 
@@ -25,7 +45,8 @@ async def get_tickets(
     category: Optional[TicketCategory] = Query(None, description="Filter by category"),
     status: Optional[TicketStatus] = Query(None, description="Filter by status"),
     priority: Optional[TicketPriority] = Query(None, description="Filter by priority"),
-    search: Optional[str] = Query(None, description="Search in description")
+    search: Optional[str] = Query(None, description="Search in description"),
+    createdBy: Optional[str] = Query(None, description="Filter by creator (fuzzy match)")
 ):
     """Get tickets with filtering and pagination."""
     tickets, total = await ticket_service.get_tickets(
@@ -35,7 +56,8 @@ async def get_tickets(
         category=category,
         status=status,
         priority=priority,
-        search=search
+        search=search,
+        created_by=createdBy
     )
 
     total_pages = (total + pageSize - 1) // pageSize
@@ -82,6 +104,14 @@ async def update_ticket(ticket_id: str, ticket_data: TicketUpdate):
     ticket = await ticket_service.update_ticket(ticket_id, ticket_data)
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+
+    # Store embedding when ticket status changes to COMPLETED
+    if ticket_data.status == "COMPLETED" and ticket.description:
+        await ai_service.store_ticket_embedding(
+            ticket_id=ticket_id,
+            description=ticket.description
+        )
+
     return ticket
 
 
@@ -91,6 +121,14 @@ async def close_ticket(ticket_id: str):
     ticket = await ticket_service.close_ticket(ticket_id)
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+
+    # Store embedding when ticket is completed (for future similarity search)
+    if ticket.description:
+        await ai_service.store_ticket_embedding(
+            ticket_id=ticket_id,
+            description=ticket.description
+        )
+
     return ticket
 
 
@@ -100,4 +138,31 @@ async def delete_ticket(ticket_id: str):
     success = await ticket_service.delete_ticket(ticket_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+
+    # Also delete the embedding from Milvus
+    ai_service.milvus.delete_embedding(ticket_id)
+
     return MessageResponse(message="Ticket deleted successfully", id=ticket_id)
+
+
+@router.post("/generate-tags", response_model=TagGenerateResponse)
+async def generate_tags(request: TagGenerateRequest):
+    """Generate tags for a ticket using AI."""
+    tags = await ai_service.generate_tags(
+        description=request.description,
+        category=request.category,
+        system_source=request.systemSource
+    )
+    return TagGenerateResponse(tags=tags)
+
+
+@router.get("/{ticket_id}/recommendation", response_model=RecommendationResponse)
+async def get_handling_recommendation(ticket_id: str):
+    """Get AI-generated handling recommendation for a ticket."""
+    recommendation = await ai_service.generate_handling_recommendation(ticket_id)
+    if not recommendation:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate recommendation"
+        )
+    return RecommendationResponse(recommendation=recommendation)
