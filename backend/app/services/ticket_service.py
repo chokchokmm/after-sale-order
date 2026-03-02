@@ -103,7 +103,8 @@ class TicketService:
         status: Optional[TicketStatus] = None,
         priority: Optional[TicketPriority] = None,
         search: Optional[str] = None,
-        created_by: Optional[str] = None
+        created_by: Optional[str] = None,
+        ticket_id: Optional[str] = None
     ) -> tuple[List[Ticket], int]:
         """Get tickets with filtering and pagination."""
         collection = await get_collection("tickets")
@@ -123,6 +124,8 @@ class TicketService:
             filter_query["description"] = {"$regex": search, "$options": "i"}
         if created_by:
             filter_query["createdBy"] = {"$regex": created_by, "$options": "i"}
+        if ticket_id:
+            filter_query["id"] = ticket_id
 
         # Get total count
         total = await collection.count_documents(filter_query)
@@ -197,27 +200,6 @@ class TicketService:
             try:
                 obj_id = ObjectId(ticket_id)
                 await collection.update_one({"_id": obj_id}, {"$set": update_dict})
-            except:
-                pass
-
-        return await self.get_ticket_by_id(ticket_id)
-
-    async def close_ticket(self, ticket_id: str) -> Optional[Ticket]:
-        """Close a ticket."""
-        collection = await get_collection("tickets")
-
-        update_data = {
-            "status": TicketStatus.COMPLETED,
-            "closedAt": datetime.utcnow(),
-            "updatedAt": datetime.utcnow()
-        }
-
-        # Try to update by custom id first, then by ObjectId
-        result = await collection.update_one({"id": ticket_id}, {"$set": update_data})
-        if result.matched_count == 0:
-            try:
-                obj_id = ObjectId(ticket_id)
-                await collection.update_one({"_id": obj_id}, {"$set": update_data})
             except:
                 pass
 

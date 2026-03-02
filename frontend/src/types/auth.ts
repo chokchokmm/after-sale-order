@@ -7,6 +7,10 @@
 // 当前登录用户信息
 export interface AuthUser {
   username: string;
+  avatar?: string;
+  email?: string;
+  feishuOpenId?: string;
+  loginType?: 'password' | 'feishu';
 }
 
 // Login credentials submitted by user
@@ -25,6 +29,7 @@ export interface AuthContextValue {
 
   // Actions
   login: (credentials: LoginCredentials) => Promise<boolean>;
+  feishuLogin: (user: AuthUser) => void;
   logout: () => void;
 }
 

@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ConfigProvider, theme as antdTheme } from "antd";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { ConfigProvider, theme as antdTheme, message } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -8,6 +8,8 @@ import TicketList from "./pages/TicketList";
 import TicketForm from "./pages/TicketForm";
 import TicketDetail from "./pages/TicketDetail";
 import Login from "./pages/Login";
+import FeishuCallback from "./pages/FeishuCallback";
+import SmartAssistant from "./components/SmartAssistant";
 
 // Custom dark theme configuration
 const darkThemeConfig = {
@@ -89,6 +91,28 @@ const darkThemeConfig = {
   },
 };
 
+// Smart Assistant wrapper - only shows on ticket list page
+function SmartAssistantWrapper() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Only show on /tickets page
+  if (location.pathname !== "/tickets") {
+    return null;
+  }
+
+  return (
+    <SmartAssistant
+      onProblemResolved={() => {
+        message.success("问题已自助解决");
+      }}
+      onCreateTicket={(description) => {
+        navigate("/tickets/new", { state: { description } });
+      }}
+    />
+  );
+}
+
 function App() {
   return (
     <ConfigProvider locale={zhCN} theme={darkThemeConfig}>
@@ -97,6 +121,14 @@ function App() {
           {/* Public route - Login page */}
           {/* 公开路由 - 登录页面 */}
           <Route path="/login" element={<Login />} />
+
+          {/* Public route - Feishu OAuth callback */}
+          {/* 公开路由 - 飞书 OAuth 回调 */}
+          <Route path="/auth/feishu/callback" element={<FeishuCallback />} />
+
+          {/* Feishu OAuth callback */}
+          {/* 飞书 OAuth 回调 */}
+          <Route path="/auth/feishu/callback" element={<FeishuCallback />} />
 
           {/* Protected routes - require authentication */}
           {/* 受保护路由 - 需要认证 */}
@@ -119,6 +151,7 @@ function App() {
           {/* 兜底重定向到首页 */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <SmartAssistantWrapper />
       </BrowserRouter>
     </ConfigProvider>
   );

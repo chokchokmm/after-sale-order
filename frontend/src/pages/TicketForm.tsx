@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Form,
   Input,
@@ -28,6 +28,7 @@ const { Option } = Select;
 
 const TicketForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const { user } = useAuth();
   const isEdit = !!id;
@@ -53,8 +54,13 @@ const TicketForm = () => {
       if (user?.username) {
         form.setFieldsValue({ createdBy: user.username });
       }
+      // Pre-fill description from smart assistant
+      const state = location.state as { description?: string } | null;
+      if (state?.description) {
+        form.setFieldsValue({ description: state.description });
+      }
     }
-  }, [id, user, form]);
+  }, [id, user, form, location.state]);
 
   const fetchTicket = async () => {
     if (!id) return;
@@ -94,6 +100,11 @@ const TicketForm = () => {
         tags,
         images: uploadedImages,
       };
+
+      // 新建时自动填充创建人
+      if (!isEdit && user?.username) {
+        submitData.createdBy = user.username;
+      }
 
       if (isEdit) {
         await ticketsApi.update(id!, submitData as TicketUpdate);
@@ -242,14 +253,28 @@ const TicketForm = () => {
     setPreviewOpen(true);
   };
 
-  const handleRemove: UploadProps['onRemove'] = (file) => {
+  const handleRemove: UploadProps['onRemove'] = async (file) => {
     return new Promise((resolve) => {
       Modal.confirm({
         title: '确认删除',
         content: '确定要删除这张图片吗？',
         okText: '确定',
         cancelText: '取消',
-        onOk: () => resolve(true),
+        onOk: async () => {
+          // If editing existing ticket, call API to delete from MinIO
+          if (id && file.uid) {
+            try {
+              await ticketsApi.deleteImage(id, file.uid);
+              setUploadedImages(prev => prev.filter(img => img.id !== file.uid));
+              message.success('图片已删除');
+            } catch (error) {
+              message.error('删除图片失败');
+              resolve(false);
+              return;
+            }
+          }
+          resolve(true);
+        },
         onCancel: () => resolve(false),
       });
     });
@@ -337,50 +362,56 @@ const TicketForm = () => {
             </Col>
           </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label={<span className="tech-form-label">处理类型</span>}
-                name="handleType"
-                rules={[{ required: true, message: "请选择处理类型" }]}
-              >
-                <Select className="tech-select" popupClassName="tech-select-dropdown">
-                  <Option value={TicketHandleType.PRODUCT}>产品处理</Option>
-                  <Option value={TicketHandleType.DEV}>开发处理</Option>
-                  <Option value={TicketHandleType.PRODUCT_DEV}>产品开发处理</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label={<span className="tech-form-label">优先级</span>}
-                name="priority"
-                rules={[{ required: true, message: "请选择优先级" }]}
-              >
-                <Select className="tech-select" popupClassName="tech-select-dropdown">
-                  <Option value={TicketPriority.P0}>P0 - 系统崩溃，功能失效</Option>
-                  <Option value={TicketPriority.P1}>P1 - 阻塞型BUG</Option>
-                  <Option value={TicketPriority.P2}>P2 - 非主流程BUG</Option>
-                  <Option value={TicketPriority.P3}>P3 - 优化问题</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+          {/* 创建人 - 仅编辑时显示，新建时自动使用当前登录用户 */}
+          {isEdit && (
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="tech-form-label">创建人</span>}
+                  name="createdBy"
+                >
+                  <Input
+                    placeholder="请输入创建人"
+                    className="tech-input"
+                    disabled
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          )}
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label={<span className="tech-form-label">创建人</span>}
-                name="createdBy"
-                rules={[{ required: true, message: "请输入创建人" }]}
-              >
-                <Input
-                  placeholder="请输入创建人"
-                  className="tech-input"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          {/* 处理类型和优先级 - 仅编辑时显示 */}
+          {isEdit && (
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="tech-form-label">处理类型</span>}
+                  name="handleType"
+                  rules={[{ required: true, message: "请选择处理类型" }]}
+                >
+                  <Select className="tech-select" popupClassName="tech-select-dropdown">
+                    <Option value={TicketHandleType.PRODUCT}>产品处理</Option>
+                    <Option value={TicketHandleType.DEV}>开发处理</Option>
+                    <Option value={TicketHandleType.PRODUCT_DEV}>产品开发处理</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={<span className="tech-form-label">优先级</span>}
+                  name="priority"
+                  rules={[{ required: true, message: "请选择优先级" }]}
+                >
+                  <Select className="tech-select" popupClassName="tech-select-dropdown">
+                    <Option value={TicketPriority.P0}>P0 - 系统崩溃，功能失效</Option>
+                    <Option value={TicketPriority.P1}>P1 - 阻塞型BUG</Option>
+                    <Option value={TicketPriority.P2}>P2 - 非主流程BUG</Option>
+                    <Option value={TicketPriority.P3}>P3 - 优化问题</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          )}
 
           <Form.Item
             label={<span className="tech-form-label">问题描述</span>}
@@ -417,12 +448,12 @@ const TicketForm = () => {
             <div className="tech-upload-hint">支持 PNG、JPG、GIF、WEBP 格式，单张不超过 2MB，最多 5 张</div>
           </Form.Item>
 
-          {isEdit && ticket?.status !== "OPEN" && (
+          {/* 处理详情 - 仅编辑时显示 */}
+          {isEdit && (
             <Form.Item
               label={
                 <span className="tech-form-label">
                   处理详情
-                  {/* T037: AI Button with distinctive glow */}
                   <Button
                     type="link"
                     icon={<RobotOutlined />}
@@ -437,7 +468,7 @@ const TicketForm = () => {
                 </span>
               }
               name="handleDetail"
-              rules={[{ required: true, message: "请输入处理详情" }]}
+              rules={[{ required: ticket?.status !== "OPEN", message: "请输入处理详情" }]}
             >
               <TextArea
                 rows={6}
@@ -447,8 +478,9 @@ const TicketForm = () => {
             </Form.Item>
           )}
 
-          {/* T039: Tag display with glowing effects */}
-          <Form.Item label={<span className="tech-form-label">标签</span>}>
+          {/* 标签 - 仅编辑时显示 */}
+          {isEdit && (
+            <Form.Item label={<span className="tech-form-label">标签</span>}>
             <div>
               <div className="tech-tags-container">
                 {tags.map((tag) => (
@@ -490,6 +522,7 @@ const TicketForm = () => {
               </div>
             </div>
           </Form.Item>
+          )}
 
           {/* T040: Submit and Cancel buttons */}
           <Form.Item>

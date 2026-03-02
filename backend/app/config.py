@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     log_level: str = "INFO"  # 日志级别: DEBUG, INFO, WARNING, ERROR
     log_dir: str = "logs"  # 日志目录
 
+    # Feishu Bot
+    feishu_webhook_url: str = ""  # 飞书机器人 Webhook URL
+
+    # Feishu OAuth
+    feishu_app_id: str = ""  # 飞书应用 ID
+    feishu_app_secret: str = ""  # 飞书应用密钥
+    feishu_redirect_uri: str = ""  # 飞书 OAuth 回调地址
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

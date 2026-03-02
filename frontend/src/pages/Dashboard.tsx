@@ -44,6 +44,7 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   const categoryChartRef = useRef<any>(null);
+  const priorityChartRef = useRef<any>(null);
   const trendChartRef = useRef<any>(null);
 
   useEffect(() => {
@@ -54,8 +55,8 @@ const Dashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await ticketsApi.getStats();
-      setStats(data);
+      const ticketData = await ticketsApi.getStats();
+      setStats(ticketData);
     } catch (err) {
       setError("加载统计数据失败");
       console.error(err);
@@ -97,6 +98,62 @@ const Dashboard = () => {
       series: [
         {
           name: "工单类型",
+          type: "pie",
+          radius: ["40%", "70%"],
+          data,
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 20,
+              shadowOffsetX: 0,
+              shadowColor: "rgba(0, 212, 255, 0.5)",
+            },
+          },
+          itemStyle: {
+            borderColor: "rgba(10, 14, 39, 0.8)",
+            borderWidth: 2,
+          },
+        },
+      ],
+    };
+  };
+
+  // 优先级分布图表配置
+  const getPriorityChartOption = (): EChartsOption => {
+    const priorityLabels: Record<string, string> = {
+      P0: "P0 紧急",
+      P1: "P1 高",
+      P2: "P2 中",
+      P3: "P3 低",
+    };
+    const priorityColors: Record<string, string> = {
+      P0: "#ff006e",  // magenta - 最紧急
+      P1: "#ffb703",  // amber - 高
+      P2: "#00d4ff",  // cyan - 中
+      P3: "#00ff88",  // green - 低
+    };
+
+    const data = Object.entries(stats?.byPriority || {}).map(([priority, count]) => ({
+      name: priorityLabels[priority] || priority,
+      value: count,
+      itemStyle: { color: priorityColors[priority] || NEON_COLORS.cyan },
+    }));
+
+    return {
+      tooltip: {
+        trigger: "item",
+        formatter: "{b}: {c} ({d}%)",
+        backgroundColor: "rgba(26, 26, 46, 0.95)",
+        borderColor: "rgba(255, 255, 255, 0.1)",
+        textStyle: { color: "#fff" },
+      },
+      legend: {
+        bottom: 0,
+        left: "center",
+        textStyle: { color: "var(--text-secondary)" },
+      },
+      series: [
+        {
+          name: "优先级",
           type: "pie",
           radius: ["40%", "70%"],
           data,
@@ -364,7 +421,7 @@ const Dashboard = () => {
         </Col>
       </Row>
 
-      {/* 工单类型分布 - Glass Card */}
+      {/* 工单类型分布 & 优先级分布 - Glass Card */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={24} lg={12}>
           <Card
@@ -392,6 +449,47 @@ const Dashboard = () => {
               <ReactECharts
                 ref={categoryChartRef}
                 option={getCategoryChartOption()}
+                style={{ height: 280 }}
+              />
+            ) : (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "80px 0",
+                  color: "var(--text-muted)",
+                }}
+              >
+                暂无数据
+              </div>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card
+            title={
+              <span style={{ color: "var(--accent-magenta)", fontSize: 14, fontWeight: 600, letterSpacing: 1 }}>
+                优先级分布
+              </span>
+            }
+            bordered={false}
+            style={{
+              borderRadius: "16px",
+              background: "rgba(26, 26, 46, 0.4)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              boxShadow: "0 4px 24px rgba(0, 0, 0, 0.2)",
+            }}
+            headStyle={{
+              borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+            }}
+            bodyStyle={{
+              background: "transparent",
+            }}
+          >
+            {Object.keys(stats?.byPriority || {}).length > 0 ? (
+              <ReactECharts
+                ref={priorityChartRef}
+                option={getPriorityChartOption()}
                 style={{ height: 280 }}
               />
             ) : (

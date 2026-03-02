@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import connect_to_mongo, close_mongo_connection
-from app.api import tickets, users
+from app.api import tickets, users, chat, auth
 from app.logger import setup_logging, get_logger
 
 # 初始化日志
@@ -45,6 +45,7 @@ async def shutdown_db_client():
 # Include routers
 app.include_router(tickets.router, prefix="/api/tickets", tags=["tickets"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
 
 
 @app.get("/")

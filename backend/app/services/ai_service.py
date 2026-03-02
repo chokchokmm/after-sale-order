@@ -366,6 +366,60 @@ class AIService:
 
         return prompt
 
+    def _build_simple_recommendation_prompt(
+        self,
+        problem: str,
+        similar_tickets: List[Dict[str, Any]]
+    ) -> str:
+        """Build prompt for simple recommendation (used by smart assistant)."""
+
+        # Build similar tickets context
+        similar_context = ""
+        ticket_ids = []
+        if similar_tickets:
+            similar_context = "\n## 历史相似工单及处理方式\n\n"
+            for i, ticket in enumerate(similar_tickets, 1):
+                ticket_id = ticket.get('id', '未知')
+                ticket_ids.append(ticket_id)
+                score = ticket.get("score", 0)
+                similar_context += f"### 相似工单 {i}\n"
+                similar_context += f"- 工单编号: {ticket_id}\n"
+                similar_context += f"- 相似度: {score:.1%}\n"
+                similar_context += f"- 问题描述: {ticket.get('description', '无')}\n"
+                similar_context += f"- 处理详情: {ticket.get('handleDetail', '无')}\n"
+                if ticket.get('solutionTemplate'):
+                    similar_context += f"- 解决方案模板: {ticket.get('solutionTemplate')}\n"
+                similar_context += "\n"
+
+        # Build the list of available ticket IDs
+        available_ids = "\n".join([f"- {tid}" for tid in ticket_ids]) if ticket_ids else "无"
+
+        prompt = f"""你是一个售后工单处理助手。你只能根据历史相似工单的处理详情，为当前工单推荐处理步骤。
+
+## 用户问题
+{problem}
+
+{similar_context}
+
+## 严格要求
+1. 如果没有历史相似工单，必须回答"暂无相似工单推荐，建议创建工单由人工处理"
+2. 如果有历史相似工单，推荐的处理步骤必须来自上述相似工单的"处理详情",不能自己凭空编造,可以根据当前问题的具体情况，对历史处理步骤进行适当的顺序调整或合并，但不能添加新的内容
+3. 输出格式要清晰，便于阅读和执行
+4. 在输出内容的最后，必须列出你参考的工单编号（**只能使用下面列出的真实编号，如果可用真实工单编号没有，就显示 无相似工单**）：
+
+可用的真实工单编号：
+{available_ids}
+
+---
+**参考工单：**
+（只能填写上面列出的真实编号）
+- AS-XXXXXXX-XX
+- ...
+
+请直接输出处理步骤，不要输出开场白或其他无关内容。"""
+
+        return prompt
+
     async def generate_handling_recommendation(
         self,
         ticket_id: str

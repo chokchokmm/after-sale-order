@@ -108,6 +108,7 @@ export interface TicketListParams {
   priority?: TicketPriority;
   search?: string;
   createdBy?: string;
+  ticketId?: string;
 }
 
 export interface TicketListResponse {

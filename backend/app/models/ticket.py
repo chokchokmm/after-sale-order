@@ -89,9 +89,9 @@ class TicketCreate(BaseModel):
     systemSource: TicketSystemSource
     category: TicketCategory
     description: str
-    handleType: TicketHandleType
+    handleType: TicketHandleType = TicketHandleType.PRODUCT
     handleDetail: str = ""
-    priority: TicketPriority
+    priority: TicketPriority = TicketPriority.P2
     tags: List[str] = Field(default_factory=list)
     images: List[TicketImage] = Field(default_factory=list, description="Ticket screenshots")
     solutionTemplate: Optional[str] = None

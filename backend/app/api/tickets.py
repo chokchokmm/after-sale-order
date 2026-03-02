@@ -9,6 +9,7 @@ from app.schemas.response import TicketListResponse, MessageResponse
 from app.services.ticket_service import ticket_service
 from app.services.ai_service import ai_service
 from app.services.storage_service import storage_service
+from app.services.feishu_service import send_ticket_completed_message
 
 router = APIRouter()
 
@@ -58,7 +59,8 @@ async def get_tickets(
     status: Optional[TicketStatus] = Query(None, description="Filter by status"),
     priority: Optional[TicketPriority] = Query(None, description="Filter by priority"),
     search: Optional[str] = Query(None, description="Search in description"),
-    createdBy: Optional[str] = Query(None, description="Filter by creator (fuzzy match)")
+    createdBy: Optional[str] = Query(None, description="Filter by creator (fuzzy match)"),
+    ticketId: Optional[str] = Query(None, description="Filter by ticket ID")
 ):
     """Get tickets with filtering and pagination."""
     tickets, total = await ticket_service.get_tickets(
@@ -69,7 +71,8 @@ async def get_tickets(
         status=status,
         priority=priority,
         search=search,
-        created_by=createdBy
+        created_by=createdBy,
+        ticket_id=ticketId
     )
 
     total_pages = (total + pageSize - 1) // pageSize
@@ -101,10 +104,10 @@ async def get_ticket_statistics():
     }
 
 
-@router.get("/{ticket_id}", response_model=TicketResponse)
+@router.get("/{ticket_id}")
 async def get_ticket(ticket_id: str):
     """Get a ticket by ID."""
-    ticket = await ticket_service.get_ticket_by_id(ticket_id)
+    ticket = await ticket_service.get_ticket_by_id_with_urls(ticket_id)
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     return ticket
@@ -117,28 +120,17 @@ async def update_ticket(ticket_id: str, ticket_data: TicketUpdate):
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
 
-    # Store embedding when ticket status changes to COMPLETED
+    # Store embedding and send notification when ticket status changes to COMPLETED
     if ticket_data.status == "COMPLETED" and ticket.description:
         await ai_service.store_ticket_embedding(
             ticket_id=ticket_id,
             description=ticket.description
         )
-
-    return ticket
-
-
-@router.post("/{ticket_id}/close", response_model=TicketResponse)
-async def close_ticket(ticket_id: str):
-    """Close a ticket."""
-    ticket = await ticket_service.close_ticket(ticket_id)
-    if not ticket:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
-
-    # Store embedding when ticket is completed (for future similarity search)
-    if ticket.description:
-        await ai_service.store_ticket_embedding(
-            ticket_id=ticket_id,
-            description=ticket.description
+        # Send Feishu notification
+        await send_ticket_completed_message(
+            ticket_id=ticket.id,
+            description=ticket.description,
+            handle_detail=ticket.handleDetail
         )
 
     return ticket

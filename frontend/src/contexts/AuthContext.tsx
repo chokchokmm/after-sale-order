@@ -67,6 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // 创建用户对象
     const newUser: AuthUser = {
       username: credentials.username,
+      loginType: 'password',
     };
 
     // Persist to localStorage
@@ -83,6 +84,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // 更新状态
     setUser(newUser);
     return true;
+  };
+
+  /**
+   * Login with Feishu user info
+   * 直接使用飞书用户信息登录
+   *
+   * Login with Feishu user info
+   * Directly login with Feishu user information
+   */
+  const feishuLogin = (feishuUser: AuthUser) => {
+    const newUser: AuthUser = {
+      username: feishuUser.username,
+      avatar: feishuUser.avatar,
+      email: feishuUser.email,
+      feishuOpenId: feishuUser.feishuOpenId,
+      loginType: 'feishu',
+    };
+
+    // Persist to localStorage
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(newUser));
+    } catch (error) {
+      console.error('Failed to persist user to localStorage:', error);
+    }
+
+    // Update state
+    setUser(newUser);
   };
 
   /**
@@ -105,6 +133,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     isLoading,
     login,
+    feishuLogin: feishuLogin,
     logout,
   };
 

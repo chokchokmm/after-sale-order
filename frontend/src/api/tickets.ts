@@ -34,12 +34,6 @@ export const ticketsApi = {
     return response.data;
   },
 
-  // Close ticket
-  close: async (id: string): Promise<Ticket> => {
-    const response = await api.post<Ticket>(`/api/tickets/${id}/close`);
-    return response.data;
-  },
-
   // Delete ticket
   delete: async (id: string): Promise<void> => {
     await api.delete(`/api/tickets/${id}`);

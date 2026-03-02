@@ -1,8 +1,9 @@
-import { Form, Input, Button, Card, message } from 'antd';
+import { Form, Input, Button, Card, message, Divider } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { authApi } from '../api/auth';
 
 interface LoginFormValues {
   username: string;
@@ -21,6 +22,7 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [form] = Form.useForm();
+  const [feishuLoading, setFeishuLoading] = useState(false);
 
   // Get the redirect path from location state, default to '/'
   // 从 location state 获取重定向路径，默认为 '/'
@@ -86,6 +88,22 @@ function Login() {
     }
   };
 
+  /**
+   * Handle Feishu login
+   * 处理飞书登录
+   */
+  const handleFeishuLogin = async () => {
+    try {
+      setFeishuLoading(true);
+      const response = await authApi.getFeishuAuthUrl();
+      window.location.href = response.url;
+    } catch (error) {
+      message.error('获取飞书授权链接失败');
+      console.error(error);
+      setFeishuLoading(false);
+    }
+  };
+
   return (
     <div className="tech-login-container">
       {/* T041: Dark gradient background with animated elements */}
@@ -145,6 +163,37 @@ function Login() {
               className="tech-login-btn"
             >
               登录
+            </Button>
+          </Form.Item>
+
+          <Divider style={{ borderColor: 'rgba(255, 255, 255, 0.1)', margin: '24px 0' }}>
+            <span style={{ color: 'rgba(160, 160, 176, 0.6)', fontSize: 12 }}>或</span>
+          </Divider>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button
+              block
+              size="large"
+              className="tech-feishu-btn"
+              onClick={handleFeishuLogin}
+              loading={feishuLoading}
+            >
+              <span className="tech-feishu-btn-content">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="tech-feishu-logo"
+                >
+                  <path d="M5.8 5.8H11V11H5.8V5.8Z" fill="#1890FF" />
+                  <path d="M13 5.8H18.2V11H13V5.8Z" fill="#33A9FF" />
+                  <path d="M5.8 13H11V18.2H5.8V13Z" fill="#33A9FF" />
+                  <path d="M13 13H18.2V18.2H13V13Z" fill="#6ED4FF" />
+                </svg>
+                <span>飞书登录</span>
+              </span>
             </Button>
           </Form.Item>
         </Form>
@@ -405,6 +454,40 @@ function Login() {
         .tech-login-btn:active {
           transform: translateY(0);
           box-shadow: 0 2px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Feishu Login Button */
+        .tech-feishu-btn {
+          height: 48px !important;
+          background: rgba(22, 33, 62, 0.6) !important;
+          border: 1px solid rgba(0, 212, 255, 0.3) !important;
+          border-radius: 12px !important;
+          font-size: 16px !important;
+          font-weight: 600 !important;
+          color: var(--accent-cyan, #00d4ff) !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .tech-feishu-btn-content {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .tech-feishu-logo {
+          flex-shrink: 0;
+        }
+
+        .tech-feishu-btn:hover {
+          background: rgba(0, 212, 255, 0.1) !important;
+          border-color: var(--accent-cyan, #00d4ff) !important;
+          box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+          transform: translateY(-2px);
+        }
+
+        .tech-feishu-btn:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 15px rgba(0, 212, 255, 0.2);
         }
 
         /* Login Footer */

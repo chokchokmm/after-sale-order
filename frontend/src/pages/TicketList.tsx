@@ -11,6 +11,7 @@ import {
   Row,
   Col,
   Dropdown,
+  Modal,
 } from "antd";
 import type { ColumnsType, TablePaginationConfig, MenuProps } from "antd/es/table";
 import {
@@ -98,19 +99,28 @@ const TicketList = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (actionLoading) return;
-    try {
-      setActionLoading(id);
-      await ticketsApi.delete(id);
-      message.success("删除成功");
-      fetchTickets();
-    } catch (err) {
-      message.error("删除失败");
-      console.error(err);
-    } finally {
-      setActionLoading(null);
-    }
+    Modal.confirm({
+      title: '确认删除',
+      content: '确定要删除这个工单吗？删除后无法恢复。',
+      okText: '确定',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          setActionLoading(id);
+          await ticketsApi.delete(id);
+          message.success("删除成功");
+          fetchTickets();
+        } catch (err) {
+          message.error("删除失败");
+          console.error(err);
+        } finally {
+          setActionLoading(null);
+        }
+      },
+    });
   };
 
   const handleStatusChange = async (id: string, newStatus: TicketStatus) => {
@@ -354,14 +364,14 @@ const TicketList = () => {
         className="tech-glass-card"
       >
         {/* Filter Controls */}
-        <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col span={6}>
-            <Search
-              placeholder="搜索描述"
-              onSearch={handleSearch}
-              enterButton
+        <Row gutter={[16, 12]} style={{ marginBottom: 16 }}>
+          <Col span={4}>
+            <Input
+              placeholder="工单 ID"
+              value={params.ticketId}
+              onChange={(e) => handleFilterChange("ticketId", e.target.value || undefined)}
               allowClear
-              className="tech-search-input"
+              className="tech-input"
             />
           </Col>
           <Col span={4}>
@@ -388,7 +398,7 @@ const TicketList = () => {
               <Option value="WMS">WMS</Option>
             </Select>
           </Col>
-          <Col span={3}>
+          <Col span={4}>
             <Select
               placeholder="工单类型"
               allowClear
@@ -403,7 +413,7 @@ const TicketList = () => {
               <Option value="COST_OPTIMIZATION">系统提升</Option>
             </Select>
           </Col>
-          <Col span={3}>
+          <Col span={4}>
             <Select
               placeholder="状态"
               allowClear
@@ -431,11 +441,20 @@ const TicketList = () => {
               className="tech-select"
               popupClassName="tech-select-dropdown"
             >
-              <Option value="P0">P0 - 系统崩溃，功能失效</Option>
-              <Option value="P1">P1 - 阻塞型BUG</Option>
-              <Option value="P2">P2 - 非主流程BUG</Option>
-              <Option value="P3">P3 - 优化问题</Option>
+              <Option value="P0">P0 紧急</Option>
+              <Option value="P1">P1 高</Option>
+              <Option value="P2">P2 中</Option>
+              <Option value="P3">P3 低</Option>
             </Select>
+          </Col>
+          <Col span={6}>
+            <Search
+              placeholder="搜索描述"
+              onSearch={handleSearch}
+              enterButton
+              allowClear
+              className="tech-search-input"
+            />
           </Col>
         </Row>
 
