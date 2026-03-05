@@ -25,7 +25,6 @@ export const priorityConfig: Record<
 export const categoryConfig: Record<TicketCategory, { label: string }> = {
   [TicketCategory.TICKET_PROCESS]: { label: "工单处理" },
   [TicketCategory.SYSTEM_FAILURE]: { label: "系统故障" },
-  [TicketCategory.COST_OPTIMIZATION]: { label: "系统提升" },
 };
 
 // System source mapping to display text

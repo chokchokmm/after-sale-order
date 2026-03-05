@@ -246,8 +246,8 @@ const TicketDetail = () => {
         }
 
         .tech-back-btn {
-          background: rgba(26, 26, 46, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-elevated) !important;
+          border: 1px solid var(--border-subtle) !important;
           color: var(--text-secondary) !important;
           border-radius: 8px !important;
         }
@@ -282,7 +282,7 @@ const TicketDetail = () => {
           justify-content: space-between;
           align-items: flex-start;
           padding-bottom: 12px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+          border-bottom: 1px solid var(--border-subtle);
         }
 
         .tech-info-row:last-child {
@@ -322,23 +322,23 @@ const TicketDetail = () => {
         }
 
         .tech-priority[data-priority="P0"] {
-          background: rgba(255, 0, 110, 0.15);
-          color: #ff006e;
+          background: var(--border-glow-magenta);
+          color: var(--accent-magenta);
         }
 
         .tech-priority[data-priority="P1"] {
-          background: rgba(255, 183, 3, 0.15);
-          color: #ffb703;
+          background: var(--border-glow-amber);
+          color: var(--accent-amber);
         }
 
         .tech-priority[data-priority="P2"] {
-          background: rgba(0, 212, 255, 0.15);
-          color: #00d4ff;
+          background: var(--border-glow-cyan);
+          color: var(--accent-cyan);
         }
 
         .tech-priority[data-priority="P3"] {
-          background: rgba(0, 255, 136, 0.15);
-          color: #00ff88;
+          background: var(--border-glow-green);
+          color: var(--accent-green);
         }
 
         .tech-tags {
@@ -349,8 +349,8 @@ const TicketDetail = () => {
         }
 
         .tech-tag {
-          background: rgba(0, 212, 255, 0.1) !important;
-          border: 1px solid rgba(0, 212, 255, 0.3) !important;
+          background: var(--border-glow-cyan) !important;
+          border: 1px solid var(--border-glow-cyan) !important;
           border-radius: 12px !important;
           color: var(--accent-cyan) !important;
           font-size: 11px !important;

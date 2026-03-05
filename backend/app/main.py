@@ -4,6 +4,7 @@ from app.config import settings
 from app.database import connect_to_mongo, close_mongo_connection
 from app.api import tickets, users, chat, auth
 from app.logger import setup_logging, get_logger
+import uvicorn
 
 # 初始化日志
 setup_logging()
@@ -15,6 +16,20 @@ app = FastAPI(
     description="After-sales Ticket Management System API",
     version="1.0.0"
 )
+
+
+def main():
+    """主入口函数，从配置读取 host 和 port 启动服务器。"""
+    uvicorn.run(
+        "app.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=False
+    )
+
+
+if __name__ == "__main__":
+    main()
 
 # Configure CORS
 app.add_middleware(

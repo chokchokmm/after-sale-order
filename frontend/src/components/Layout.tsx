@@ -7,6 +7,8 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
+import ThemeToggle from "./ThemeToggle";
 
 const { Header, Content, Sider } = AntLayout;
 
@@ -14,6 +16,7 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { theme } = useTheme();
 
   const menuItems = [
     {
@@ -40,13 +43,16 @@ const Layout = () => {
   };
 
   return (
-    <AntLayout style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
+    <AntLayout
+      data-theme={theme}
+      style={{ minHeight: "100vh", background: "var(--bg-primary)" }}
+    >
       <Sider
         breakpoint="lg"
         collapsedWidth="0"
         style={{
           background: "var(--bg-secondary)",
-          borderRight: "1px solid rgba(255, 255, 255, 0.05)",
+          borderRight: "1px solid var(--border-subtle)",
         }}
         width={220}
       >
@@ -57,8 +63,8 @@ const Layout = () => {
             fontWeight: 600,
             fontSize: "16px",
             color: "var(--accent-cyan)",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
-            textShadow: "0 0 10px rgba(0, 212, 255, 0.5)",
+            borderBottom: "1px solid var(--border-subtle)",
+            textShadow: "var(--glow-cyan)",
           }}
         >
           售后工单系统
@@ -79,9 +85,9 @@ const Layout = () => {
         <Header
           style={{
             padding: "0 24px",
-            background: "rgba(10, 14, 39, 0.9)",
+            background: "var(--header-bg)",
             backdropFilter: "blur(10px)",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+            borderBottom: "1px solid var(--border-subtle)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -102,9 +108,10 @@ const Layout = () => {
           >
             售后工单管理系统
           </h1>
-          {/* User info and logout button */}
-          {/* 用户信息和退出按钮 */}
-          <Space>
+          {/* Theme toggle, user info and logout button */}
+          {/* 主题切换、用户信息和退出按钮 */}
+          <Space size="middle">
+            <ThemeToggle />
             <span style={{ color: "var(--text-secondary)" }}>
               <UserOutlined style={{ marginRight: 8, color: "var(--accent-cyan)" }} />
               {user?.username}
@@ -138,11 +145,11 @@ const Layout = () => {
             style={{
               padding: 24,
               minHeight: 360,
-              background: "rgba(26, 26, 46, 0.4)",
+              background: "var(--bg-surface)",
               backdropFilter: "blur(10px)",
               borderRadius: 16,
-              border: "1px solid rgba(255, 255, 255, 0.05)",
-              boxShadow: "0 4px 24px rgba(0, 0, 0, 0.2)",
+              border: "1px solid var(--border-subtle)",
+              boxShadow: "var(--glow-cyan)",
             }}
           >
             <Outlet />

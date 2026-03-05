@@ -6,8 +6,7 @@ export enum TicketSystemSource {
 
 export enum TicketCategory {
   TICKET_PROCESS = "TICKET_PROCESS",
-  SYSTEM_FAILURE = "SYSTEM_FAILURE",
-  COST_OPTIMIZATION = "COST_OPTIMIZATION"
+  SYSTEM_FAILURE = "SYSTEM_FAILURE"
 }
 
 export enum TicketHandleType {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Table,
   Button,
@@ -12,8 +12,10 @@ import {
   Col,
   Dropdown,
   Modal,
+  Tabs,
 } from "antd";
-import type { ColumnsType, TablePaginationConfig, MenuProps } from "antd/es/table";
+import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
+import type { MenuProps } from "antd";
 import {
   PlusOutlined,
   EyeOutlined,
@@ -21,25 +23,21 @@ import {
   PlayCircleOutlined,
   CheckCircleOutlined,
   MoreOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import { ticketsApi } from "../api";
-import type { Ticket, TicketListParams, TicketPriority, TicketStatus } from "../types";
+import type { Ticket, TicketListParams, TicketPriority } from "../types";
+import { TicketStatus } from "../types";
 import { getCategoryLabel, formatDate } from "../utils";
 import StatusBadge from "../components/StatusBadge";
 import GlowButton from "../components/GlowButton";
+import { useTheme } from "../contexts/ThemeContext";
 
 const { Search } = Input;
 const { Option } = Select;
 
-// Neon colors for consistent styling
-const NEON_COLORS = {
-  cyan: "#00d4ff",
-  magenta: "#ff006e",
-  green: "#00ff88",
-  amber: "#ffb703",
-};
-
 const TicketList = () => {
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
@@ -49,7 +47,7 @@ const TicketList = () => {
     page: 1,
     pageSize: 10,
   });
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [activeStatus, setActiveStatus] = useState<TicketStatus>(TicketStatus.OPEN);
   const [initialized, setInitialized] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -57,27 +55,20 @@ const TicketList = () => {
     const searchParams = new URLSearchParams(location.search);
     const statusParam = searchParams.get("status");
 
-    if (statusParam) {
-      const newStatus = statusParam.includes(",") ? statusParam.split(",")[0] : statusParam;
+    if (statusParam && ['OPEN', 'PROCESSING', 'COMPLETED'].includes(statusParam)) {
+      setActiveStatus(statusParam as TicketStatus);
       setParams(prev => ({
         ...prev,
-        status: newStatus as TicketStatus,
+        status: statusParam as TicketStatus,
       }));
-      setStatusFilter(newStatus);
+    } else {
+      setParams(prev => ({
+        ...prev,
+        status: TicketStatus.OPEN,
+      }));
     }
     setInitialized(true);
   }, [location.search]);
-
-  useEffect(() => {
-    if (initialized) {
-      if (statusFilter) {
-        setParams(prev => ({
-          ...prev,
-          status: statusFilter as TicketStatus,
-        }));
-      }
-    }
-  }, [statusFilter, initialized]);
 
   useEffect(() => {
     if (initialized) {
@@ -150,7 +141,7 @@ const TicketList = () => {
       navigate(`/tickets/${record.id}/edit`);
       return;
     }
-    handleStatusChange(record.id, "COMPLETED");
+    handleStatusChange(record.id, TicketStatus.COMPLETED);
   };
 
   const getStatusActions = (record: Ticket): MenuProps['items'] => {
@@ -168,13 +159,13 @@ const TicketList = () => {
   const getStatusButton = (record: Ticket) => {
     const isLoading = actionLoading === record.id;
     switch (record.status) {
-      case "OPEN":
+      case TicketStatus.OPEN:
         return (
           <Button
             type="link"
             size="small"
             icon={<PlayCircleOutlined />}
-            onClick={() => handleStatusChange(record.id, "PROCESSING")}
+            onClick={() => handleStatusChange(record.id, TicketStatus.PROCESSING)}
             className="tech-action-btn tech-action-btn-cyan"
             loading={isLoading}
             disabled={!!actionLoading}
@@ -182,19 +173,31 @@ const TicketList = () => {
             开始处理
           </Button>
         );
-      case "PROCESSING":
+      case TicketStatus.PROCESSING:
         return (
-          <Button
-            type="link"
-            size="small"
-            icon={<CheckCircleOutlined />}
-            onClick={() => handleComplete(record)}
-            className="tech-action-btn tech-action-btn-green"
-            loading={isLoading}
-            disabled={!!actionLoading}
-          >
-            完成
-          </Button>
+          <>
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/tickets/${record.id}/edit`)}
+              className="tech-action-btn tech-action-btn-cyan"
+              disabled={!!actionLoading}
+            >
+              去处理
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleComplete(record)}
+              className="tech-action-btn tech-action-btn-green"
+              loading={isLoading}
+              disabled={!!actionLoading}
+            >
+              完成
+            </Button>
+          </>
         );
       default:
         return null;
@@ -226,7 +229,7 @@ const TicketList = () => {
       title: "ID",
       dataIndex: "id",
       key: "id",
-      width: 140,
+      width: 120,
       render: (id) => (
         <span className="tech-id-cell">
           {id}
@@ -234,10 +237,27 @@ const TicketList = () => {
       ),
     },
     {
+      title: "优先级",
+      dataIndex: "priority",
+      key: "priority",
+      width: 110,
+      render: (value: TicketPriority) => (
+        <StatusBadge priority={value} />
+      ),
+    },
+    {
+      title: "描述",
+      dataIndex: "description",
+      key: "description",
+      width: 200,
+      ellipsis: true,
+      render: (value) => <span style={{ color: "var(--text-secondary)" }}>{value}</span>,
+    },
+    {
       title: "来源系统",
       dataIndex: "systemSource",
       key: "systemSource",
-      width: 100,
+      width: 80,
       render: (value) => (
         <span className="tech-source-badge">
           {value}
@@ -248,50 +268,23 @@ const TicketList = () => {
       title: "类型",
       dataIndex: "category",
       key: "category",
-      width: 120,
-      render: (value) => <span style={{ color: "var(--text-primary)" }}>{getCategoryLabel(value)}</span>,
-    },
-    {
-      title: "描述",
-      dataIndex: "description",
-      key: "description",
-      ellipsis: true,
-      render: (value) => <span style={{ color: "var(--text-secondary)" }}>{value}</span>,
-    },
-    {
-      title: "处理类型",
-      dataIndex: "handleType",
-      key: "handleType",
-      width: 120,
-      render: (value) => (
-        <span className="tech-handle-type-badge">
-          {value}
-        </span>
-      ),
-    },
-    {
-      title: "优先级",
-      dataIndex: "priority",
-      key: "priority",
       width: 80,
-      render: (value: TicketPriority) => (
-        <StatusBadge priority={value} />
-      ),
+      render: (value) => <span style={{ color: "var(--text-primary)" }}>{getCategoryLabel(value)}</span>,
     },
     {
       title: "状态",
       dataIndex: "status",
       key: "status",
-      width: 100,
+      width: 80,
       render: (value: TicketStatus) => (
-        <StatusBadge status={value} animated={value === "PROCESSING"} />
+        <StatusBadge status={value} animated={value === TicketStatus.PROCESSING} />
       ),
     },
     {
       title: "创建人",
       dataIndex: "createdBy",
       key: "createdBy",
-      width: 100,
+      width: 70,
       render: (value) => (
         <span className="tech-creator-cell">
           {value || "未知"}
@@ -302,7 +295,7 @@ const TicketList = () => {
       title: "创建时间",
       dataIndex: "createdAt",
       key: "createdAt",
-      width: 160,
+      width: 120,
       render: (value) => (
         <span className="tech-time-cell">
           {formatDate(value)}
@@ -312,7 +305,7 @@ const TicketList = () => {
     {
       title: "操作",
       key: "action",
-      width: 200,
+      width: 220,
       fixed: "right",
       render: (_, record) => (
         <Space size="small">
@@ -343,7 +336,7 @@ const TicketList = () => {
   ];
 
   return (
-    <div className="tech-page-container">
+    <div className="tech-page-container" style={{ padding: 0, minHeight: "100%", background: "var(--bg-primary)" }}>
       <Card
         title={
           <span className="tech-card-title">
@@ -362,7 +355,34 @@ const TicketList = () => {
           </GlowButton>
         }
         className="tech-glass-card"
+        bordered={false}
+        style={{
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border-subtle)",
+          borderRadius: "12px",
+        }}
       >
+        {/* Status Tabs */}
+        <Tabs
+          activeKey={activeStatus}
+          onChange={(key) => {
+            const status = key as TicketStatus;
+            setActiveStatus(status);
+            setParams(prev => ({
+              ...prev,
+              status,
+              page: 1,
+            }));
+          }}
+          items={[
+            { key: 'OPEN', label: '待处理' },
+            { key: 'PROCESSING', label: '处理中' },
+            { key: 'COMPLETED', label: '已完成' },
+          ]}
+          style={{ marginBottom: 16 }}
+          className="tech-tabs"
+        />
+
         {/* Filter Controls */}
         <Row gutter={[16, 12]} style={{ marginBottom: 16 }}>
           <Col span={4}>
@@ -410,41 +430,6 @@ const TicketList = () => {
             >
               <Option value="TICKET_PROCESS">工单处理</Option>
               <Option value="SYSTEM_FAILURE">系统故障</Option>
-              <Option value="COST_OPTIMIZATION">系统提升</Option>
-            </Select>
-          </Col>
-          <Col span={4}>
-            <Select
-              placeholder="状态"
-              allowClear
-              value={statusFilter || undefined}
-              style={{ width: "100%" }}
-              onChange={(value) => {
-                setStatusFilter(value || "");
-                handleFilterChange("status", value);
-              }}
-              className="tech-select"
-              popupClassName="tech-select-dropdown"
-            >
-              <Option value="OPEN">待处理</Option>
-              <Option value="PROCESSING">处理中</Option>
-              <Option value="COMPLETED">已完成</Option>
-            </Select>
-          </Col>
-          <Col span={4}>
-            <Select
-              placeholder="优先级"
-              allowClear
-              value={params.priority}
-              style={{ width: "100%" }}
-              onChange={(value) => handleFilterChange("priority", value)}
-              className="tech-select"
-              popupClassName="tech-select-dropdown"
-            >
-              <Option value="P0">P0 紧急</Option>
-              <Option value="P1">P1 高</Option>
-              <Option value="P2">P2 中</Option>
-              <Option value="P3">P3 低</Option>
             </Select>
           </Col>
           <Col span={6}>
@@ -483,25 +468,9 @@ const TicketList = () => {
 
       {/* Custom styles for tech-themed TicketList */}
       <style>{`
-        /* T019: Page Container Dark Background */
-        .tech-page-container {
-          padding: 0;
-          min-height: 100%;
-          background: var(--bg-primary);
-        }
-
-        /* T023: Glass-morphism Card */
-        .tech-glass-card {
-          background: rgba(26, 26, 46, 0.6) !important;
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.08) !important;
-          border-radius: var(--radius-lg) !important;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-                      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        }
-
+        /* Glass-morphism Card */
         .tech-glass-card .ant-card-head {
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border-bottom: 1px solid var(--border-subtle) !important;
           background: transparent !important;
         }
 
@@ -509,7 +478,6 @@ const TicketList = () => {
           background: transparent !important;
         }
 
-        /* Card Title */
         .tech-card-title {
           color: var(--accent-cyan);
           font-size: 14px;
@@ -518,51 +486,53 @@ const TicketList = () => {
           text-transform: uppercase;
         }
 
-        /* T022: Search Input Styling */
-        .tech-search-input .ant-input {
-          background: rgba(22, 33, 62, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        /* Search Input Styling */
+        .tech-input,
+        .tech-creator-input {
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-subtle) !important;
           color: var(--text-primary) !important;
-          border-radius: var(--radius-sm) !important;
+          border-radius: 6px !important;
           transition: all 0.3s ease;
         }
 
-        .tech-search-input .ant-input:focus,
-        .tech-search-input .ant-input:hover {
-          border-color: var(--accent-cyan) !important;
-          box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1),
-                      0 0 15px rgba(0, 212, 255, 0.2) !important;
+        .tech-input:focus,
+        .tech-creator-input:focus,
+        .tech-input:hover,
+        .tech-creator-input:hover {
+          border-color: var(--border-glow-cyan) !important;
+          box-shadow: var(--glow-cyan) !important;
         }
 
-        .tech-search-input .ant-input::placeholder {
+        .tech-input::placeholder,
+        .tech-creator-input::placeholder {
           color: var(--text-muted) !important;
         }
 
-        .tech-search-input .ant-input-search-button {
-          background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)) !important;
+        .tech-input .ant-input-search-button {
+          background: var(--gradient-primary) !important;
           border: none !important;
           box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
         }
 
-        .tech-search-input .ant-input-search-button:hover {
+        .tech-input .ant-input-search-button:hover {
           box-shadow: 0 0 20px rgba(0, 212, 255, 0.5) !important;
           transform: translateY(-1px);
         }
 
-        /* T022: Select Dropdown Styling */
+        /* Select Dropdown Styling */
         .tech-select .ant-select-selector {
-          background: rgba(22, 33, 62, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-subtle) !important;
           color: var(--text-primary) !important;
-          border-radius: var(--radius-sm) !important;
+          border-radius: 6px !important;
           transition: all 0.3s ease;
         }
 
         .tech-select:hover .ant-select-selector,
         .tech-select-focused .ant-select-selector {
-          border-color: var(--accent-cyan) !important;
-          box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1),
-                      0 0 15px rgba(0, 212, 255, 0.2) !important;
+          border-color: var(--border-glow-cyan) !important;
+          box-shadow: var(--glow-cyan) !important;
         }
 
         .tech-select .ant-select-selection-placeholder {
@@ -574,10 +544,10 @@ const TicketList = () => {
         }
 
         .tech-select-dropdown {
-          background: rgba(22, 33, 62, 0.95) !important;
+          background: var(--bg-secondary) !important;
           backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          border-radius: var(--radius-sm) !important;
+          border: 1px solid var(--border-subtle) !important;
+          border-radius: 6px !important;
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
         }
 
@@ -595,15 +565,15 @@ const TicketList = () => {
           color: var(--accent-cyan) !important;
         }
 
-        /* T020: Table Styling */
+        /* Table Styling */
         .tech-table {
           background: transparent !important;
         }
 
         .tech-table .ant-table-thead > tr > th {
-          background: rgba(22, 33, 62, 0.6) !important;
+          background: var(--bg-table-header) !important;
           color: var(--text-secondary) !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-bottom: 1px solid var(--border-subtle) !important;
           font-weight: 500;
           text-transform: uppercase;
           font-size: 12px;
@@ -611,21 +581,21 @@ const TicketList = () => {
         }
 
         .tech-table-row-even td {
-          background: rgba(26, 26, 46, 0.3) !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+          background: var(--bg-table-row-even) !important;
+          border-bottom: 1px solid var(--border-subtle) !important;
           transition: all 0.3s ease;
         }
 
         .tech-table-row-odd td {
-          background: rgba(22, 33, 62, 0.3) !important;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+          background: var(--bg-table-row-odd) !important;
+          border-bottom: 1px solid var(--border-subtle) !important;
           transition: all 0.3s ease;
         }
 
         .tech-table-row-even:hover td,
         .tech-table-row-odd:hover td {
-          background: rgba(0, 212, 255, 0.08) !important;
-          box-shadow: inset 0 0 0 1px rgba(0, 212, 255, 0.15);
+          background: var(--bg-hover-cyan) !important;
+          box-shadow: inset 0 0 0 1px rgba(0, 212, 255, 0.1);
         }
 
         /* Table Cell Styles */
@@ -644,15 +614,6 @@ const TicketList = () => {
           font-size: 12px;
         }
 
-        .tech-handle-type-badge {
-          background: rgba(123, 44, 191, 0.1);
-          border: 1px solid rgba(123, 44, 191, 0.3);
-          border-radius: 8px;
-          padding: 2px 10px;
-          color: var(--accent-magenta);
-          font-size: 12px;
-        }
-
         .tech-time-cell {
           color: var(--text-secondary);
           font-size: 13px;
@@ -664,27 +625,7 @@ const TicketList = () => {
           font-size: 13px;
         }
 
-        /* Creator Filter Input */
-        .tech-creator-input {
-          background: rgba(22, 33, 62, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          color: var(--text-primary) !important;
-          border-radius: var(--radius-sm) !important;
-          transition: all 0.3s ease;
-        }
-
-        .tech-creator-input:focus,
-        .tech-creator-input:hover {
-          border-color: var(--accent-cyan) !important;
-          box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1),
-                      0 0 15px rgba(0, 212, 255, 0.2) !important;
-        }
-
-        .tech-creator-input::placeholder {
-          color: var(--text-muted) !important;
-        }
-
-        /* T024: Action Button Styling */
+        /* Action Button Styling */
         .tech-action-btn {
           color: var(--text-secondary) !important;
           transition: all 0.3s ease !important;
@@ -700,11 +641,11 @@ const TicketList = () => {
           text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
         }
 
-        /* T025: Pagination Styling */
+        /* Pagination Styling */
         .tech-pagination .ant-pagination-item {
-          background: rgba(22, 33, 62, 0.6) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          border-radius: var(--radius-sm) !important;
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-subtle) !important;
+          border-radius: 6px !important;
         }
 
         .tech-pagination .ant-pagination-item a {
@@ -713,7 +654,7 @@ const TicketList = () => {
 
         .tech-pagination .ant-pagination-item:hover,
         .tech-pagination .ant-pagination-item-active {
-          border-color: var(--accent-cyan) !important;
+          border-color: var(--border-glow-cyan) !important;
           background: rgba(0, 212, 255, 0.1) !important;
         }
 
@@ -731,12 +672,16 @@ const TicketList = () => {
         .tech-pagination .ant-pagination-next:hover .ant-pagination-item-link {
           color: var(--accent-cyan) !important;
           background: rgba(0, 212, 255, 0.1) !important;
-          border-color: var(--accent-cyan) !important;
+          border-color: var(--border-glow-cyan) !important;
         }
 
         .tech-pagination .ant-pagination-options .ant-select-selector {
-          background: rgba(22, 33, 62, 0.6) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-subtle) !important;
+        }
+
+        .tech-pagination .ant-pagination-options .ant-select-arrow {
+          color: var(--text-secondary);
         }
 
         .tech-pagination-total {
@@ -756,10 +701,10 @@ const TicketList = () => {
 
         /* Dropdown Menu Styling */
         .ant-dropdown-menu {
-          background: rgba(22, 33, 62, 0.95) !important;
+          background: var(--bg-secondary) !important;
           backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
-          border-radius: var(--radius-sm) !important;
+          border: 1px solid var(--border-subtle) !important;
+          border-radius: 6px !important;
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
         }
 
@@ -777,6 +722,34 @@ const TicketList = () => {
 
         .ant-dropdown-menu-item-danger:hover {
           background: rgba(255, 77, 79, 0.1) !important;
+        }
+
+        /* Tabs Styling */
+        .tech-tabs .ant-tabs-nav::before {
+          border-bottom: 1px solid var(--border-subtle) !important;
+        }
+
+        .tech-tabs .ant-tabs-tab {
+          color: var(--text-secondary) !important;
+          transition: all 0.3s ease;
+          padding: 12px 24px !important;
+        }
+
+        .tech-tabs .ant-tabs-tab:hover {
+          color: var(--accent-cyan) !important;
+;
+        }
+
+        .tech-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+          color: var(--accent-cyan) !important;
+          text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+          font-weight: 600;
+        }
+
+        .tech-tabs .ant-tabs-ink-bar {
+          background: var(--accent-cyan) !important;
+          box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+          height: 3px !important;
         }
       `}</style>
     </div>

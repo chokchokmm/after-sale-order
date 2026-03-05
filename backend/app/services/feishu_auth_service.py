@@ -18,6 +18,10 @@ class FeishuAuthService:
 
     def get_auth_url(self, state: str = "") -> str:
         """Generate Feishu OAuth authorization URL."""
+        if not settings.feishu_app_id or not settings.feishu_app_secret:
+            logger.error("Feishu OAuth credentials not configured")
+            return ""
+
         params = {
             "app_id": settings.feishu_app_id,
             "redirect_uri": settings.feishu_redirect_uri,

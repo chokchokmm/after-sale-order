@@ -22,11 +22,13 @@ import type { UploadFile, UploadProps } from "antd/es/upload/interface";
 import { TicketSystemSource, TicketCategory, TicketHandleType, TicketPriority } from "../types";
 import GlowButton from "../components/GlowButton";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 const { TextArea } = Input;
 const { Option } = Select;
 
 const TicketForm = () => {
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
@@ -50,11 +52,9 @@ const TicketForm = () => {
     if (isEdit) {
       fetchTicket();
     } else {
-      // Auto-populate createdBy with current user on create
       if (user?.username) {
         form.setFieldsValue({ createdBy: user.username });
       }
-      // Pre-fill description from smart assistant
       const state = location.state as { description?: string } | null;
       if (state?.description) {
         form.setFieldsValue({ description: state.description });
@@ -69,7 +69,6 @@ const TicketForm = () => {
       const data = await ticketsApi.get(id);
       setTicket(data);
       setTags(data.tags || []);
-      // Load existing images into fileList
       if (data.images && data.images.length > 0) {
         setUploadedImages(data.images);
         const files: UploadFile[] = data.images.map((img: TicketImage) => ({
@@ -101,7 +100,6 @@ const TicketForm = () => {
         images: uploadedImages,
       };
 
-      // 新建时自动填充创建人
       if (!isEdit && user?.username) {
         submitData.createdBy = user.username;
       }
@@ -157,7 +155,6 @@ const TicketForm = () => {
       });
 
       if (result.tags && result.tags.length > 0) {
-        // Merge with existing tags, avoid duplicates
         const newTags = [...new Set([...tags, ...result.tags])];
         setTags(newTags);
         message.success(`已生成 ${result.tags.length} 个标签`);
@@ -185,7 +182,6 @@ const TicketForm = () => {
       const result = await ticketsApi.getRecommendation(id);
 
       if (result.recommendation) {
-        // Set the recommendation to handleDetail field
         form.setFieldsValue({ handleDetail: result.recommendation });
         message.success({ content: "已生成处理推荐", key: "recommendation" });
       } else {
@@ -199,21 +195,17 @@ const TicketForm = () => {
     }
   };
 
-  // Image upload handlers
   const handleBeforeUpload = (file: File) => {
-    // Validate file type
     const isValidType = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(file.type);
     if (!isValidType) {
       message.error('仅支持 PNG、JPG、GIF、WEBP 格式的图片');
       return Upload.LIST_IGNORE;
     }
-    // Validate file size (2MB)
     const isValidSize = file.size / 1024 / 1024 < 2;
     if (!isValidSize) {
       message.error('图片大小不能超过 2MB');
       return Upload.LIST_IGNORE;
     }
-    // Validate max count
     if (fileList.length >= 5) {
       message.error('最多只能上传 5 张图片');
       return Upload.LIST_IGNORE;
@@ -224,9 +216,7 @@ const TicketForm = () => {
   const handleCustomRequest: UploadProps['customRequest'] = async ({ file, onSuccess, onError }) => {
     try {
       const result: UploadResponse = await ticketsApi.uploadImage(file as File);
-      // Store the image info for form submission
       setUploadedImages(prev => [...prev, result.image]);
-      // Update fileList with URL for display
       if (onSuccess) {
         onSuccess(result);
       }
@@ -241,7 +231,6 @@ const TicketForm = () => {
 
   const handleUploadChange: UploadProps['onChange'] = ({ fileList: newFileList, file }) => {
     setFileList(newFileList);
-    // When a file is removed, update uploadedImages
     if (file.status === 'removed') {
       const removedUid = file.uid;
       setUploadedImages(prev => prev.filter(img => img.id !== removedUid));
@@ -251,6 +240,7 @@ const TicketForm = () => {
   const handlePreview = async (file: UploadFile) => {
     setPreviewImage(file.url || file.thumbUrl || '');
     setPreviewOpen(true);
+    return undefined;
   };
 
   const handleRemove: UploadProps['onRemove'] = async (file) => {
@@ -261,11 +251,10 @@ const TicketForm = () => {
         okText: '确定',
         cancelText: '取消',
         onOk: async () => {
-          // If editing existing ticket, call API to delete from MinIO
           if (id && file.uid) {
             try {
               await ticketsApi.deleteImage(id, file.uid);
-              setUploadedImages(prev => prev.filter(img => img.id !== file.uid));
+              setUploadedImages(prevImages => prevImages.filter(img => img.id !== file.uid));
               message.success('图片已删除');
             } catch (error) {
               message.error('删除图片失败');
@@ -282,29 +271,15 @@ const TicketForm = () => {
 
   if (loading) {
     return (
-      <div className="tech-loading-container">
-        <div className="tech-spinner">加载中...</div>
-        <style>{`
-          .tech-loading-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 400px;
-            background: var(--bg-primary);
-          }
-          .tech-spinner {
-            color: var(--accent-cyan);
-            font-size: 16px;
-          }
-        `}</style>
+      <div className="tech-loading-container" style={{ padding: 0, minHeight: "100%", background: "var(--bg-primary)" }}>
+        <div className="tech-spinner" style={{ color: "var(--accent-cyan)", fontSize: 16 }}>加载中...</div>
       </div>
     );
   }
 
   return (
-    <div className="tech-page-container">
-      {/* T033: Header with back button */}
-      <div className="tech-form-header">
+    <div className="tech-page-container" style={{ padding: 0, minHeight: "100%", background: "var(--bg-primary)" }}>
+      <div className="tech-form-header" style={{ marginBottom: 16 }}>
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate("/tickets")}
@@ -314,13 +289,10 @@ const TicketForm = () => {
         </Button>
       </div>
 
-      {/* T034: Glass-morphism Card */}
       <Card
         title={<span className="tech-card-title">{isEdit ? "编辑工单" : "新建工单"}</span>}
         className="tech-glass-card"
-        headStyle={{
-          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-        }}
+        headStyle={{ borderBottom: "1px solid var(--border-subtle)" }}
       >
         <Form
           form={form}
@@ -356,13 +328,11 @@ const TicketForm = () => {
                 <Select className="tech-select" popupClassName="tech-select-dropdown">
                   <Option value={TicketCategory.TICKET_PROCESS}>工单处理</Option>
                   <Option value={TicketCategory.SYSTEM_FAILURE}>系统故障</Option>
-                  <Option value={TicketCategory.COST_OPTIMIZATION}>系统提升</Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
 
-          {/* 创建人 - 仅编辑时显示，新建时自动使用当前登录用户 */}
           {isEdit && (
             <Row gutter={16}>
               <Col span={12}>
@@ -380,7 +350,6 @@ const TicketForm = () => {
             </Row>
           )}
 
-          {/* 处理类型和优先级 - 仅编辑时显示 */}
           {isEdit && (
             <Row gutter={16}>
               <Col span={12}>
@@ -425,7 +394,6 @@ const TicketForm = () => {
             />
           </Form.Item>
 
-          {/* Image Upload */}
           <Form.Item label={<span className="tech-form-label">截图</span>}>
             <Upload
               listType="picture-card"
@@ -448,7 +416,6 @@ const TicketForm = () => {
             <div className="tech-upload-hint">支持 PNG、JPG、GIF、WEBP 格式，单张不超过 2MB，最多 5 张</div>
           </Form.Item>
 
-          {/* 处理详情 - 仅编辑时显示 */}
           {isEdit && (
             <Form.Item
               label={
@@ -478,7 +445,6 @@ const TicketForm = () => {
             </Form.Item>
           )}
 
-          {/* 标签 - 仅编辑时显示 */}
           {isEdit && (
             <Form.Item label={<span className="tech-form-label">标签</span>}>
             <div>
@@ -496,7 +462,6 @@ const TicketForm = () => {
                 ))}
               </div>
               <div className="tech-tag-actions">
-                {/* T037: AI feature button with distinctive glow */}
                 <Button
                   icon={<RobotOutlined />}
                   onClick={handleGenerateTags}
@@ -524,7 +489,6 @@ const TicketForm = () => {
           </Form.Item>
           )}
 
-          {/* T040: Submit and Cancel buttons */}
           <Form.Item>
             <Space size="middle">
               <GlowButton
@@ -548,7 +512,6 @@ const TicketForm = () => {
         </Form>
       </Card>
 
-      {/* Image Preview Modal */}
       <Modal
         open={previewOpen}
         footer={null}
@@ -558,25 +521,22 @@ const TicketForm = () => {
         <Image src={previewImage} style={{ width: '100%' }} preview={false} />
       </Modal>
 
-      {/* Custom styles for tech-themed TicketForm */}
       <style>{`
-        /* T033: Page Container Dark Background */
         .tech-page-container {
           padding: 0;
           min-height: 100%;
           background: var(--bg-primary);
         }
 
-        /* Header */
         .tech-form-header {
           margin-bottom: 16px;
         }
 
         .tech-back-btn {
-          background: rgba(22, 33, 62, 0.6) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-elevated) !important;
+          border: 1px solid var(--border-subtle) !important;
           color: var(--text-secondary) !important;
-          border-radius: var(--radius-sm) !important;
+          border-radius: 6px !important;
           transition: all 0.3s ease;
         }
 
@@ -586,18 +546,16 @@ const TicketForm = () => {
           box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
         }
 
-        /* T034: Glass-morphism Card */
         .tech-glass-card {
-          background: rgba(26, 26, 46, 0.6) !important;
+          background: var(--bg-secondary) !important;
           backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.08) !important;
-          border-radius: var(--radius-lg) !important;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-                      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border-subtle) !important;
+          border-radius: 12px !important;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
         }
 
         .tech-glass-card .ant-card-head {
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+          border-bottom: 1px solid var(--border-subtle) !important;
           background: transparent !important;
         }
 
@@ -605,7 +563,6 @@ const TicketForm = () => {
           background: transparent !important;
         }
 
-        /* Card Title */
         .tech-card-title {
           color: var(--accent-cyan);
           font-size: 14px;
@@ -614,19 +571,17 @@ const TicketForm = () => {
           text-transform: uppercase;
         }
 
-        /* Form Label */
         .tech-form-label {
           color: var(--text-secondary);
           font-weight: 500;
           font-size: 13px;
         }
 
-        /* T035: Input Focus Glow Effects */
         .tech-form .ant-input,
         .tech-form .ant-input-password,
         .tech-form .ant-input-affix-wrapper {
-          background: rgba(22, 33, 62, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-subtle) !important;
           color: var(--text-primary) !important;
           border-radius: var(--radius-sm) !important;
           transition: all 0.3s ease;
@@ -634,7 +589,7 @@ const TicketForm = () => {
 
         .tech-form .ant-input:hover,
         .tech-form .ant-input-affix-wrapper:hover {
-          border-color: rgba(0, 212, 255, 0.3) !important;
+          border-color: var(--border-glow-cyan) !important;
         }
 
         .tech-form .ant-input:focus,
@@ -642,47 +597,42 @@ const TicketForm = () => {
         .tech-form .ant-input-affix-wrapper-focused,
         .tech-form .ant-input-affix-wrapper:focus {
           border-color: var(--accent-cyan) !important;
-          box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1),
-                      0 0 20px rgba(0, 212, 255, 0.2) !important;
+          box-shadow: var(--glow-cyan-intense) !important;
         }
 
         .tech-form .ant-input::placeholder {
           color: var(--text-muted) !important;
         }
 
-        /* TextArea */
         .tech-textarea {
-          background: rgba(22, 33, 62, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-subtle) !important;
           color: var(--text-primary) !important;
-          border-radius: var(--radius-sm) !important;
+          border-radius: 6px !important;
           transition: all 0.3s ease;
         }
 
         .tech-textarea:hover {
-          border-color: rgba(0, 212, 255, 0.3) !important;
+          border-color: var(--border-glow-cyan) !important;
         }
 
         .tech-textarea:focus {
           border-color: var(--accent-cyan) !important;
-          box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1),
-                      0 0 20px rgba(0, 212, 255, 0.2) !important;
+          box-shadow: var(--glow-cyan-intense) !important;
         }
 
-        /* T036: Select Dropdown Styling */
         .tech-select .ant-select-selector {
-          background: rgba(22, 33, 62, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-subtle) !important;
           color: var(--text-primary) !important;
-          border-radius: var(--radius-sm) !important;
+          border-radius: 6px !important;
           transition: all 0.3s ease;
         }
 
         .tech-select:hover .ant-select-selector,
         .tech-select-focused .ant-select-selector {
           border-color: var(--accent-cyan) !important;
-          box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1),
-                      0 0 15px rgba(0, 212, 255, 0.2) !important;
+          box-shadow: var(--glow-cyan) !important;
         }
 
         .tech-select .ant-select-selection-placeholder {
@@ -694,9 +644,9 @@ const TicketForm = () => {
         }
 
         .tech-select-dropdown {
-          background: rgba(22, 33, 62, 0.95) !important;
+          background: var(--bg-secondary) !important;
           backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border: 1px solid var(--border-subtle) !important;
           border-radius: var(--radius-sm) !important;
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
         }
@@ -715,7 +665,6 @@ const TicketForm = () => {
           color: var(--accent-cyan) !important;
         }
 
-        /* T037: AI Feature Buttons */
         .tech-ai-btn {
           background: rgba(123, 44, 191, 0.15) !important;
           border: 1px solid rgba(255, 0, 110, 0.3) !important;
@@ -742,7 +691,6 @@ const TicketForm = () => {
           background: rgba(123, 44, 191, 0.2) !important;
         }
 
-        /* T038: Validation Error States */
         .tech-form .ant-form-item-explain-error {
           color: #ff4d4f !important;
           font-size: 12px;
@@ -763,7 +711,6 @@ const TicketForm = () => {
           color: #ff4d4f !important;
         }
 
-        /* T039: Tag Display with Glowing Effects */
         .tech-tags-container {
           display: flex;
           flex-wrap: wrap;
@@ -809,8 +756,8 @@ const TicketForm = () => {
 
         .tech-tag-input {
           width: 180px !important;
-          background: rgba(22, 33, 62, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-subtle) !important;
           color: var(--text-primary) !important;
           border-radius: var(--radius-sm) !important;
           transition: all 0.3s ease;
@@ -818,8 +765,7 @@ const TicketForm = () => {
 
         .tech-tag-input:focus {
           border-color: var(--accent-cyan) !important;
-          box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1),
-                      0 0 15px rgba(0, 212, 255, 0.2) !important;
+          box-shadow: var(--glow-cyan) !important;
         }
 
         .tech-add-tag-btn {
@@ -835,23 +781,21 @@ const TicketForm = () => {
           box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
         }
 
-        /* T040: Cancel Button */
         .tech-cancel-btn {
-          background: rgba(22, 33, 62, 0.6) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-elevated) !important;
+          border: 1px solid var(--border-subtle) !important;
           color: var(--text-secondary) !important;
           border-radius: var(--radius-sm) !important;
           transition: all 0.3s ease;
         }
 
         .tech-cancel-btn:hover {
-          border-color: rgba(255, 255, 255, 0.3) !important;
+          border-color: var(--accent-cyan) !important;
           color: var(--text-primary) !important;
         }
 
-        /* Image Upload Styles */
         .tech-upload .ant-upload.ant-upload-select-picture-card {
-          background: rgba(22, 33, 62, 0.8) !important;
+          background: var(--bg-surface) !important;
           border: 1px dashed rgba(0, 212, 255, 0.3) !important;
           border-radius: var(--radius-sm) !important;
           transition: all 0.3s ease;
@@ -871,8 +815,8 @@ const TicketForm = () => {
         }
 
         .tech-upload .ant-upload-list-picture-card .ant-upload-list-item {
-          background: rgba(22, 33, 62, 0.8) !important;
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          background: var(--bg-surface) !important;
+          border: 1px solid var(--border-subtle) !important;
           border-radius: var(--radius-sm) !important;
         }
 
@@ -894,11 +838,10 @@ const TicketForm = () => {
           margin-top: 8px;
         }
 
-        /* Preview Modal */
         .tech-preview-modal .ant-modal-content {
-          background: rgba(22, 33, 62, 0.95) !important;
+          background: var(--bg-secondary) !important;
           backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border: 1px solid var(--border-subtle) !important;
           border-radius: var(--radius-lg) !important;
         }
 

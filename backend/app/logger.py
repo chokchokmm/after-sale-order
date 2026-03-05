@@ -5,8 +5,8 @@ from logging.handlers import RotatingFileHandler
 from app.config import settings
 
 
-# 日志目录
-LOG_DIR = Path(__file__).parent.parent / "logs"
+# 日志目录（从配置读取）
+LOG_DIR = Path(settings.log_dir)
 LOG_DIR.mkdir(exist_ok=True)
 
 # 日志格式
@@ -16,9 +16,9 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 def setup_logging():
     """配置日志系统，同时输出到终端和文件。"""
-    # 根日志器
+    # 根日志器（从配置读取日志级别）
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
+    root_logger.setLevel(getattr(logging, settings.log_level.upper()))
 
     # 清除已有的 handlers
     root_logger.handlers.clear()

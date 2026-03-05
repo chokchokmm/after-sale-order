@@ -1,6 +1,8 @@
 import React from 'react';
 import { Tag } from 'antd';
 import type { TagProps } from 'antd';
+import { priorityColors, statusColors } from '../config/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 type StatusType = 'OPEN' | 'PROCESSING' | 'COMPLETED';
 type PriorityType = 'P0' | 'P1' | 'P2' | 'P3';
@@ -12,10 +14,6 @@ interface StatusBadgeProps extends Omit<TagProps, 'color'> {
   label?: string;
 }
 
-/**
- * StatusBadge - A glowing badge component for status and priority indicators
- * 状态徽章 - 用于状态和优先级指示器的发光徽章组件
- */
 const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
   priority,
@@ -25,24 +23,26 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   className = '',
   ...restProps
 }) => {
+  const { theme } = useTheme();
+
   const getStatusConfig = (s: StatusType) => {
     const configs: Record<StatusType, { color: string; bg: string; border: string; label: string }> = {
       OPEN: {
-        color: '#ffb703',
-        bg: 'rgba(255, 183, 3, 0.15)',
-        border: 'rgba(255, 183, 3, 0.4)',
+        color: statusColors.OPEN.color,
+        bg: statusColors.OPEN.bgColor,
+        border: statusColors.OPEN.color + '40',
         label: '待处理',
       },
       PROCESSING: {
-        color: '#00d4ff',
-        bg: 'rgba(0, 212, 255, 0.15)',
-        border: 'rgba(0, 212, 255, 0.4)',
+        color: statusColors.PROCESSING.color,
+        bg: statusColors.PROCESSING.bgColor,
+        border: statusColors.PROCESSING.color + '40',
         label: '处理中',
       },
       COMPLETED: {
-        color: '#00ff88',
-        bg: 'rgba(0, 255, 136, 0.15)',
-        border: 'rgba(0, 255, 136, 0.4)',
+        color: statusColors.COMPLETED.color,
+        bg: statusColors.COMPLETED.bgColor,
+        border: statusColors.COMPLETED.color + '40',
         label: '已完成',
       },
     };
@@ -52,28 +52,28 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   const getPriorityConfig = (p: PriorityType) => {
     const configs: Record<PriorityType, { color: string; bg: string; border: string; label: string }> = {
       P0: {
-        color: '#ff006e',
-        bg: 'rgba(255, 0, 110, 0.15)',
-        border: 'rgba(255, 0, 110, 0.4)',
-        label: 'P0',
+        color: priorityColors.P0.color,
+        bg: priorityColors.P0.bgColor,
+        border: priorityColors.P0.color + '40',
+        label: 'P0 - 系统崩溃',
       },
       P1: {
-        color: '#ff4d4f',
-        bg: 'rgba(255, 77, 79, 0.15)',
-        border: 'rgba(255, 77, 79, 0.4)',
-        label: 'P1',
+        color: priorityColors.P1.color,
+        bg: priorityColors.P1.bgColor,
+        border: priorityColors.P1.color + '40',
+        label: 'P1 - 阻塞型BUG',
       },
       P2: {
-        color: '#faad14',
-        bg: 'rgba(250, 173, 20, 0.15)',
-        border: 'rgba(250, 173, 20, 0.4)',
-        label: 'P2',
+        color: priorityColors.P2.color,
+        bg: priorityColors.P2.bgColor,
+        border: priorityColors.P2.color + '40',
+        label: 'P2 - 非主流程BUG',
       },
       P3: {
-        color: '#52c41a',
-        bg: 'rgba(82, 196, 26, 0.15)',
-        border: 'rgba(82, 196, 26, 0.4)',
-        label: 'P3',
+        color: priorityColors.P3.color,
+        bg: priorityColors.P3.bgColor,
+        border: priorityColors.P3.color + '40',
+        label: 'P3 - 优化问题',
       },
     };
     return configs[p];
@@ -99,6 +99,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
     padding: '2px 12px',
     fontSize: '12px',
     fontWeight: 500,
+    whiteSpace: 'nowrap',
     boxShadow: animated
       ? `0 0 8px ${config.color}40`
       : `0 0 4px ${config.color}30`,

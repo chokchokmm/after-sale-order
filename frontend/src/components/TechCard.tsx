@@ -28,24 +28,24 @@ const TechCard: React.FC<TechCardProps> = ({
 
     const glowColors: Record<string, { border: string; shadow: string }> = {
       cyan: {
-        border: 'rgba(0, 212, 255, 0.3)',
-        shadow: '0 0 5px rgba(0, 212, 255, 0.3), 0 0 20px rgba(0, 212, 255, 0.2), 0 4px 30px rgba(0, 0, 0, 0.3)',
+        border: 'var(--border-glow-cyan)',
+        shadow: 'var(--glow-cyan)',
       },
       magenta: {
-        border: 'rgba(255, 0, 110, 0.3)',
-        shadow: '0 0 5px rgba(255, 0, 110, 0.3), 0 0 20px rgba(255, 0, 110, 0.2), 0 4px 30px rgba(0, 0, 0, 0.3)',
+        border: 'var(--border-glow-magenta)',
+        shadow: 'var(--glow-magenta)',
       },
       green: {
-        border: 'rgba(0, 255, 136, 0.3)',
-        shadow: '0 0 5px rgba(0, 255, 136, 0.3), 0 0 20px rgba(0, 255, 136, 0.2), 0 4px 30px rgba(0, 0, 0, 0.3)',
+        border: 'var(--border-glow-green)',
+        shadow: 'var(--glow-green)',
       },
       amber: {
-        border: 'rgba(255, 183, 3, 0.3)',
-        shadow: '0 0 5px rgba(255, 183, 3, 0.3), 0 0 20px rgba(255, 183, 3, 0.2), 0 4px 30px rgba(0, 0, 0, 0.3)',
+        border: 'var(--border-glow-amber)',
+        shadow: 'var(--glow-amber)',
       },
       purple: {
-        border: 'rgba(123, 44, 191, 0.3)',
-        shadow: '0 0 5px rgba(123, 44, 191, 0.3), 0 0 20px rgba(123, 44, 191, 0.2), 0 4px 30px rgba(0, 0, 0, 0.3)',
+        border: 'var(--border-glow-purple)',
+        shadow: 'var(--glow-purple)',
       },
     };
 
@@ -58,7 +58,7 @@ const TechCard: React.FC<TechCardProps> = ({
   };
 
   const cardStyle: React.CSSProperties = {
-    background: glassEffect ? 'rgba(26, 26, 46, 0.6)' : 'var(--bg-secondary)',
+    background: glassEffect ? 'var(--bg-surface)' : 'var(--bg-secondary)',
     backdropFilter: glassEffect ? 'blur(10px)' : 'none',
     WebkitBackdropFilter: glassEffect ? 'blur(10px)' : 'none',
     borderRadius: 'var(--radius-lg)',

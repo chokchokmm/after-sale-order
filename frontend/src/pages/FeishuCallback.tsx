@@ -13,6 +13,7 @@ const FeishuCallback: React.FC = () => {
   useEffect(() => {
     const handleCallback = async () => {
       const code = searchParams.get("code");
+      const state = searchParams.get("state");
       const errorParam = searchParams.get("error");
 
       if (errorParam) {
@@ -29,8 +30,15 @@ const FeishuCallback: React.FC = () => {
         return;
       }
 
+      if (!state) {
+        setError("state 参数缺失");
+        message.error("state 参数缺失");
+        setTimeout(() => navigate("/login"), 2000);
+        return;
+      }
+
       try {
-        const response = await authApi.feishuLogin(code);
+        const response = await authApi.feishuLogin(code, state);
 
         if (response.success && response.user) {
           feishuLogin(response.user);

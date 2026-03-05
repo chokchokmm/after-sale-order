@@ -15,7 +15,6 @@ class TicketCategory(str, Enum):
     """Category of the ticket."""
     TICKET_PROCESS = "TICKET_PROCESS"
     SYSTEM_FAILURE = "SYSTEM_FAILURE"
-    COST_OPTIMIZATION = "COST_OPTIMIZATION"
 
 
 class TicketHandleType(str, Enum):

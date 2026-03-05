@@ -304,8 +304,7 @@ class AIService:
 
         category_map = {
             "TICKET_PROCESS": "工单处理",
-            "SYSTEM_FAILURE": "系统故障",
-            "COST_OPTIMIZATION": "系统提升"
+            "SYSTEM_FAILURE": "系统故障"
         }
         source_map = {
             "TMS": "TMS运输管理系统",
@@ -478,8 +477,7 @@ class AIService:
         """Build prompt for tag generation."""
         category_map = {
             "TICKET_PROCESS": "工单处理",
-            "SYSTEM_FAILURE": "系统故障",
-            "COST_OPTIMIZATION": "系统提升"
+            "SYSTEM_FAILURE": "系统故障"
         }
         source_map = {
             "TMS": "TMS运输管理系统",

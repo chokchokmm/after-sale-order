@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from app.services.feishu_auth_service import feishu_auth_service
+from app.services.state_store import generate_state, validate_state
 from app.logger import get_logger
 
 logger = get_logger(__name__)
@@ -21,6 +22,7 @@ class FeishuAuthUrlResponse(BaseModel):
 class FeishuLoginRequest(BaseModel):
     """Request for Feishu login."""
     code: str
+    state: str
 
 
 class FeishuLoginResponse(BaseModel):
@@ -33,8 +35,12 @@ class FeishuLoginResponse(BaseModel):
 @router.get("/feishu", response_model=FeishuAuthUrlResponse)
 async def get_feishu_auth_url():
     """Get Feishu OAuth authorization URL."""
-    state = secrets.token_urlsafe(16)
+    state = generate_state()
     auth_url = feishu_auth_service.get_auth_url(state)
+
+    if not auth_url:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail="飞书认证未配置")
 
     return FeishuAuthUrlResponse(
         url=auth_url,
@@ -45,6 +51,14 @@ async def get_feishu_auth_url():
 @router.post("/feishu/login", response_model=FeishuLoginResponse)
 async def feishu_login(request: FeishuLoginRequest):
     """Login with Feishu authorization code."""
+    if not validate_state(request.state):
+        logger.warning(f"Invalid or expired state: {request.state[:10]}...")
+        return FeishuLoginResponse(
+            success=False,
+            message="state 无效或已过期，请重试",
+            user=None
+        )
+
     logger.info(f"Feishu login attempt with code: {request.code[:10]}...")
 
     result = await feishu_auth_service.login_with_code(request.code)

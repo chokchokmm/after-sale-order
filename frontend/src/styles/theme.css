@@ -1,7 +1,9 @@
 /* Futuristic Tech Theme - CSS Custom Properties */
 /* 售后工单系统 - 科技感主题 */
 
-:root {
+/* Dark Theme (default) */
+:root,
+[data-theme="dark"] {
   /* Background Colors - Deep Space Palette */
   --bg-primary: #0a0e27;
   --bg-secondary: #1a1a2e;
@@ -66,9 +68,66 @@
   --z-sticky: 200;
   --z-modal: 300;
   --z-tooltip: 400;
+
+  /* Header Background */
+  --header-bg: rgba(10, 14, 39, 0.9);
+
+  /* Table Backgrounds */
+  --bg-table-header: rgba(22, 33, 62, 0.6);
+  --bg-table-row-even: rgba(26, 26, 46, 0.2);
+  --bg-table-row-odd: rgba(22, 33, 62, 0.2);
+  --bg-hover-cyan: rgba(0, 212, 255, 0.08);
 }
 
-/* Global Dark Theme Base */
+/* Light Theme */
+[data-theme="light"] {
+  /* Background Colors - Light Palette */
+  --bg-primary: #f5f7fa;
+  --bg-secondary: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-elevated: #fafafa;
+
+  /* Accent Colors - Adjusted for light theme */
+  --accent-cyan: #1890ff;
+  --accent-magenta: #eb2f96;
+  --accent-green: #52c41a;
+  --accent-amber: #faad14;
+  --accent-purple: #722ed1;
+
+  /* Text Colors */
+  --text-primary: #1f1f1f;
+  --text-secondary: #8c8c8c;
+  --text-muted: #bfbfbf;
+  --text-disabled: #d9d9d9;
+
+  /* Border Colors */
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-glow-cyan: rgba(24, 144, 255, 0.3);
+  --border-glow-magenta: rgba(235, 47, 150, 0.3);
+  --border-glow-green: rgba(82, 196, 26, 0.3);
+  --border-glow-amber: rgba(250, 173, 20, 0.3);
+  --border-glow-purple: rgba(114, 46, 209, 0.3);
+
+  /* Glow Effects - Lighter for light theme */
+  --glow-cyan: 0 0 3px rgba(24, 144, 255, 0.2);
+  --glow-cyan-intense: 0 0 5px rgba(24, 144, 255, 0.3);
+  --glow-magenta: 0 0 3px rgba(235, 47, 150, 0.2);
+  --glow-magenta-intense: 0 0 5px rgba(235, 47, 150, 0.3);
+  --glow-green: 0 0 3px rgba(82, 196, 26, 0.2);
+  --glow-amber: 0 0 3px rgba(250, 173, 20, 0.2);
+  --glow-purple: 0 0 3px rgba(114, 46, 209, 0.2);
+
+  /* Header Background */
+  --header-bg: rgba(255, 255, 255, 0.9);
+
+  /* Table Backgrounds - For light theme table has transparent background with borders */
+  --bg-table-header: rgba(0, 0, 0, 0.02);
+  --bg-table-row-even: transparent;
+  --bg-table-row-odd: transparent;
+  --bg-hover-cyan: rgba(24, 144, 255, 0.05);
+}
+
+/* Global Base */
 body {
   background: var(--bg-primary);
   color: var(--text-primary);

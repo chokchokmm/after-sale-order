@@ -9,7 +9,7 @@ from app.schemas.response import TicketListResponse, MessageResponse
 from app.services.ticket_service import ticket_service
 from app.services.ai_service import ai_service
 from app.services.storage_service import storage_service
-from app.services.feishu_service import send_ticket_completed_message
+from app.services.feishu_service import send_ticket_completed_message, send_ticket_created_message
 
 router = APIRouter()
 
@@ -47,6 +47,23 @@ async def create_ticket(ticket_data: TicketCreate):
     """Create a new ticket."""
     created_by = ticket_data.createdBy
     ticket = await ticket_service.create_ticket(ticket_data, created_by=created_by)
+
+    # Send Feishu notification for ticket creation (non-blocking)
+    try:
+        await send_ticket_created_message(
+            ticket_id=ticket.id,
+            system_source=ticket.systemSource.value,
+            category=ticket.category.value,
+            priority=ticket.priority.value,
+            description=ticket.description,
+            created_by=created_by
+        )
+    except Exception as e:
+        # Log error but don't fail ticket creation
+        from app.logger import get_logger
+        logger = get_logger(__name__)
+        logger.error(f"Failed to send ticket creation notification: {e}")
+
     return ticket
 
 

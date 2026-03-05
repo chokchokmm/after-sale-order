@@ -1,16 +1,42 @@
+# Dependencies
 node_modules/
 venv/
 __pycache__/
 *.pyc
-*.log
-*.png
-*.mjs
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Environment files
 .env
-!.gitignore
+.env.local
+.env.*.local
 
-# Logs directory
+# Logs
 logs/
+*.log
 
-# macOS
+# IDE & Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
 .DS_Store
-**/.DS_Store
+Thumbs.db
+
+# AI & Dev tools
+.claude/
+.specify/
+.opencode/
+openspec/
+backend/openspec/
+
+# Temporary files
+*.tmp
+*.temp
+*.mjs
+*.png

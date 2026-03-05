@@ -20,9 +20,10 @@ export const authApi = {
   },
 
   // Login with Feishu authorization code
-  feishuLogin: async (code: string): Promise<FeishuLoginResponse> => {
+  feishuLogin: async (code: string, state: string): Promise<FeishuLoginResponse> => {
     const response = await api.post<FeishuLoginResponse>("/api/auth/feishu/login", {
       code,
+      state,
     });
     return response.data;
   },

@@ -1,16 +1,13 @@
 import React from 'react';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface GlowButtonProps extends ButtonProps {
   glowColor?: 'cyan' | 'magenta' | 'green' | 'amber' | 'purple';
   gradient?: boolean;
 }
 
-/**
- * GlowButton - A futuristic button with glow effects
- * 发光按钮 - 带有发光效果的未来感按钮
- */
 const GlowButton: React.FC<GlowButtonProps> = ({
   children,
   glowColor = 'cyan',
@@ -20,6 +17,8 @@ const GlowButton: React.FC<GlowButtonProps> = ({
   className = '',
   ...restProps
 }) => {
+  const { theme } = useTheme();
+
   const getGlowStyles = (): React.CSSProperties => {
     const baseStyles: React.CSSProperties = {
       position: 'relative',
@@ -30,41 +29,41 @@ const GlowButton: React.FC<GlowButtonProps> = ({
 
     if (gradient) {
       const gradients: Record<string, string> = {
-        cyan: 'linear-gradient(135deg, #00d4ff 0%, #7b2cbf 100%)',
-        magenta: 'linear-gradient(135deg, #ff006e 0%, #7b2cbf 100%)',
-        green: 'linear-gradient(135deg, #00ff88 0%, #00d4ff 100%)',
-        amber: 'linear-gradient(135deg, #ffb703 0%, #ff006e 100%)',
-        purple: 'linear-gradient(135deg, #7b2cbf 0%, #00d4ff 100%)',
+        cyan: 'linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%)',
+        magenta: 'linear-gradient(135deg, var(--accent-magenta) 0%, var(--accent-purple) 100%)',
+        green: 'linear-gradient(135deg, var(--accent-green) 0%, var(--accent-cyan) 100%)',
+        amber: 'linear-gradient(135deg, var(--accent-amber) 0%, var(--accent-magenta) 100%)',
+        purple: 'linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-cyan) 100%)',
       };
 
       return {
         ...baseStyles,
         background: gradients[glowColor] || gradients.cyan,
         border: 'none',
-        boxShadow: `0 0 10px rgba(0, 212, 255, 0.3)`,
+        boxShadow: '0 0 10px var(--border-glow-cyan)',
       };
     }
 
     const glowColors: Record<string, { glow: string; hoverGlow: string }> = {
       cyan: {
-        glow: '0 0 5px rgba(0, 212, 255, 0.3), 0 0 20px rgba(0, 212, 255, 0.2)',
-        hoverGlow: '0 0 10px rgba(0, 212, 255, 0.5), 0 0 30px rgba(0, 212, 255, 0.3)',
+        glow: 'var(--glow-cyan)',
+        hoverGlow: 'var(--glow-cyan-intense)',
       },
       magenta: {
-        glow: '0 0 5px rgba(255, 0, 110, 0.3), 0 0 20px rgba(255, 0, 110, 0.2)',
-        hoverGlow: '0 0 10px rgba(255, 0, 110, 0.5), 0 0 30px rgba(255, 0, 110, 0.3)',
+        glow: 'var(--glow-magenta)',
+        hoverGlow: 'var(--glow-magenta-intense)',
       },
       green: {
-        glow: '0 0 5px rgba(0, 255, 136, 0.3), 0 0 20px rgba(0, 255, 136, 0.2)',
-        hoverGlow: '0 0 10px rgba(0, 255, 136, 0.5), 0 0 30px rgba(0, 255, 136, 0.3)',
+        glow: 'var(--glow-green)',
+        hoverGlow: 'var(--glow-green)',
       },
       amber: {
-        glow: '0 0 5px rgba(255, 183, 3, 0.3), 0 0 20px rgba(255, 183, 3, 0.2)',
-        hoverGlow: '0 0 10px rgba(255, 183, 3, 0.5), 0 0 30px rgba(255, 183, 3, 0.3)',
+        glow: 'var(--glow-amber)',
+        hoverGlow: 'var(--glow-amber)',
       },
       purple: {
-        glow: '0 0 5px rgba(123, 44, 191, 0.3), 0 0 20px rgba(123, 44, 191, 0.2)',
-        hoverGlow: '0 0 10px rgba(123, 44, 191, 0.5), 0 0 30px rgba(123, 44, 191, 0.3)',
+        glow: 'var(--glow-purple)',
+        hoverGlow: 'var(--glow-purple)',
       },
     };
 

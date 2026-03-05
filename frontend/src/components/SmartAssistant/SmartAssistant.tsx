@@ -8,6 +8,7 @@ import {
 } from "@ant-design/icons";
 import { chatApi } from "../../api/chat";
 import type { SimilarTicket } from "../../types/chat";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const { TextArea } = Input;
 
@@ -26,6 +27,9 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
   onCreateTicket,
 }) => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -120,11 +124,11 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
               padding: "10px 14px",
               borderRadius: 12,
               background: isUser
-                ? "rgba(0, 212, 255, 0.15)"
-                : "rgba(22, 33, 62, 0.8)",
+                ? isDark ? "rgba(0, 212, 255, 0.15)" : "rgba(0, 212, 255, 0.2)"
+                : isDark ? "rgba(22, 33, 62, 0.8)" : "rgba(240, 242, 245, 0.95)",
               border: isUser
                 ? "1px solid rgba(0, 212, 255, 0.3)"
-                : "1px solid rgba(255, 255, 255, 0.08)",
+                : isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
               color: "var(--text-primary)",
               fontSize: 14,
               lineHeight: 1.5,
@@ -193,17 +197,18 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
           height: 56,
           borderRadius: "50%",
           background: isOpen
-            ? "rgba(22, 33, 62, 0.95)"
+            ? isDark ? "rgba(22, 33, 62, 0.95)" : "rgba(255, 255, 255, 0.95)"
             : "linear-gradient(135deg, var(--accent-cyan) 0%, #0099cc 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
           boxShadow: isOpen
-            ? "none"
+            ? isDark ? "none" : "0 2px 10px rgba(0, 0, 0, 0.15)"
             : "0 4px 20px rgba(0, 212, 255, 0.4)",
           transition: "all 0.3s ease",
           zIndex: 1000,
+          border: isOpen && !isDark ? "1px solid rgba(0, 0, 0, 0.1)" : "none",
         }}
         onMouseEnter={(e) => {
           if (!isOpen) {
@@ -221,7 +226,7 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
         }}
       >
         {isOpen ? (
-          <CloseOutlined style={{ color: "var(--text-secondary)", fontSize: 20 }} />
+          <CloseOutlined style={{ color: isDark ? "var(--text-secondary)" : "#666", fontSize: 20 }} />
         ) : (
           <MessageOutlined style={{ color: "#fff", fontSize: 24 }} />
         )}
@@ -236,9 +241,9 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
             bottom: 88,
             width: 380,
             height: 520,
-            background: "rgba(26, 26, 46, 0.95)",
+            background: isDark ? "rgba(26, 26, 46, 0.95)" : "rgba(255, 255, 255, 0.98)",
             backdropFilter: "blur(12px)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
             borderRadius: 16,
             boxShadow: "0 8px 40px rgba(0, 0, 0, 0.4)",
             display: "flex",
@@ -251,7 +256,7 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
           <div
             style={{
               padding: "16px 20px",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+              borderBottom: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
               display: "flex",
               alignItems: "center",
               gap: 10,
@@ -284,8 +289,8 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
                   style={{
                     padding: "10px 14px",
                     borderRadius: 12,
-                    background: "rgba(22, 33, 62, 0.8)",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    background: isDark ? "rgba(22, 33, 62, 0.8)" : "rgba(240, 242, 245, 0.95)",
+                    border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
                   }}
                 >
                   <Spin size="small" />
@@ -299,8 +304,8 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
           <div
             style={{
               padding: 16,
-              borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-              background: "rgba(22, 33, 62, 0.5)",
+              borderTop: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
+              background: isDark ? "rgba(22, 33, 62, 0.5)" : "rgba(240, 242, 245, 0.5)",
             }}
           >
             <div style={{ display: "flex", gap: 8 }}>
@@ -316,8 +321,8 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
                 placeholder="问题描述:您的问题内容"
                 autoSize={{ minRows: 1, maxRows: 3 }}
                 style={{
-                  background: "rgba(22, 33, 62, 0.8)",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  background: isDark ? "rgba(22, 33, 62, 0.8)" : "#ffffff",
+                  border: isDark ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.15)",
                   borderRadius: 8,
                   color: "var(--text-primary)",
                   resize: "none",
@@ -332,7 +337,7 @@ const SmartAssistant: React.FC<SmartAssistantProps> = ({
                 style={{
                   background: inputValue.trim()
                     ? "linear-gradient(135deg, var(--accent-cyan) 0%, #0099cc 100%)"
-                    : "rgba(22, 33, 62, 0.8)",
+                    : isDark ? "rgba(22, 33, 62, 0.8)" : "rgba(240, 242, 245, 0.8)",
                   border: "none",
                   borderRadius: 8,
                   height: "auto",
@@ -357,12 +362,15 @@ const SimilarTicketCard: React.FC<SimilarTicketCardProps> = ({
   ticket,
   onClick,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  
   return (
     <div
       onClick={onClick}
       style={{
-        background: "rgba(22, 33, 62, 0.6)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        background: isDark ? "rgba(22, 33, 62, 0.6)" : "rgba(240, 242, 245, 0.8)",
+        border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
         borderRadius: 8,
         padding: 10,
         marginBottom: 8,
@@ -371,11 +379,11 @@ const SimilarTicketCard: React.FC<SimilarTicketCardProps> = ({
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = "rgba(0, 212, 255, 0.3)";
-        e.currentTarget.style.background = "rgba(22, 33, 62, 0.8)";
+        e.currentTarget.style.background = isDark ? "rgba(22, 33, 62, 0.8)" : "rgba(240, 242, 245, 1)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
-        e.currentTarget.style.background = "rgba(22, 33, 62, 0.6)";
+        e.currentTarget.style.borderColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)";
+        e.currentTarget.style.background = isDark ? "rgba(22, 33, 62, 0.6)" : "rgba(240, 242, 245, 0.8)";
       }}
     >
       <div
